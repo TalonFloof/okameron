@@ -1,0 +1,60 @@
+import vos.System
+
+class Foo {
+    var x int
+    // Variables CANNOT be initialized outside of init!
+
+    func init(a int) {
+        x = a
+    }
+}
+
+class Bar {
+    private value Foo
+    func init(a int) {
+        value = a
+    }
+}
+
+// Single Inheritance is also supported
+class Bird {
+    func talk() {
+        System.println("Tweet!")
+    }
+}
+
+class SnowyOwl : Bird {
+    func talk() {
+        System.println("Hoot!")
+    }
+}
+
+func main() {
+    bird := @Bird()
+    bird.talk()
+    snowyOwl := @SnowyOwl()
+    snowyOwl.talk()
+}
+
+// If compiling to C++, you can add the @struct attribute to turn a class into a regular C Struct
+
+// For instance, if I wanted to implement the LimineFramebuffer struct in Vos, It would look something like this.
+// Limine is a really cool bootloader btw (https://github.com/limine-bootloader/limine)
+
+@struct
+class LimineFramebuffer {
+    var address &void
+    var width u64
+    var height u64
+    var pitch u64
+    var bpp u16
+    var memory_model u8
+    var red_mask_size u8
+    var red_mask_shift u8
+    var green_mask_size u8
+    var green_mask_shift u8
+    var blue_mask_size u8
+    var blue_mask_shift u8
+    var unused [7]u8
+    var edid_size u64
+}

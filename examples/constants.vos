@@ -1,0 +1,5 @@
+// Constants can be declared globally
+const hi string = "Hello world!"
+// Constant types cannot be inferred.
+// YOU CANNOT DO THIS!!!
+// const hi := "Hello world!"

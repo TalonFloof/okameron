@@ -1,0 +1,14 @@
+import vos.System
+
+func main() {
+    a := i64(0)
+    b := i64(0)
+    c := i64(1)
+    System.println(a+b+c)
+    for c < 92 {
+        a = b
+        b = c
+        c = a + b
+        System.println(c)
+    }
+}
