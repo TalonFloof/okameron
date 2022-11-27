@@ -3,4 +3,4 @@
 
 **/*.vos linguist-language=Vos
 **/vos.json linguist-language=Vos
-/src/utils/json.h -linguist-vendored
+/src/utils/ linguist-vendored
