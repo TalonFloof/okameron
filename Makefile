@@ -1,2 +1,2 @@
 build:
-	gcc -std=gnu99 -fgnu89-inline -fPIC -Isrc/vos/headers -Isrc/utils src/vos/*.c src/vos/targets/*.c -o vos
+	g++ -std=c++11 -Wall -Isrc/vos/headers -Isrc/utils src/vos/*.cpp src/vos/targets/*.cpp -o vos
