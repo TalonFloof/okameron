@@ -2,3 +2,5 @@
 /bootstrap/
 /bootstrap/**
 /vos
+/.vscode/
+/.vscode/**

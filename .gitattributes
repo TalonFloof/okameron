@@ -3,4 +3,3 @@
 
 **/*.vos linguist-language=Vos
 **/vos.json linguist-language=Vos
-/src/utils/ linguist-vendored
