@@ -1,4 +1,5 @@
 #pragma once
+#include <vos_file.hpp>
 
 #include <string>
 using std::string;

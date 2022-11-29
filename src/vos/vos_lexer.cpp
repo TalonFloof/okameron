@@ -26,6 +26,7 @@ public:
     };
 private:
     void initialize();
+    Lexer::Type getType();
 	unordered_map<char, Type> hm;
 };
 
@@ -45,3 +46,6 @@ void Lexer::initialize() {
     hm['"']=STRING;
 }
 
+Lexer::Type getType(shared_ptr<VosFile> file, int offset) {
+    
+}
