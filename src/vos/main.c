@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
         content[fsize] = 0;
         fclose(f);
         fprintf(stderr, "\x1b[1mLexing...\x1b[0m");
-        lexer_parse((char*)content);
+        lexer_parse(argv[1], (const char*)content);
         fprintf(stderr, "");
         gettimeofday(&stop, NULL);
         double start_timestamp = (double)((start.tv_sec*1000)+(start.tv_usec/1000));

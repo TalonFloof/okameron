@@ -1,5 +1,3 @@
-import vos.System
-
 func main() {
     System.println("Hello world!")
 }

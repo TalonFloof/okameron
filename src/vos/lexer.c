@@ -1,21 +1,55 @@
 #include <stdio.h>
 #include <error.h>
-#include <lex.h>
+#include <lexer.h>
+#include <stdlib.h>
+#include <string.h>
 
-static const char* PatternComment = "\\/\\*.*?\\*\\/";
+#define TOKEN_ALLOCATION_AMOUNT 128 /* Lowering this number will impact performance, but will improve memory usage. */
+
+/*static const char* PatternComment = "\\/\\*.*?\\*\\/";
 static const char* PatternString = "[\"]([^\"\\\\\\n]|\\\\.|\\\\\\n)*[\"]";
 static const char* PatternIntBase10 = "[\\-0-9]+";
 static const char* PatternIntBase2 = "0b[0-1]+";
 static const char* PatternIntBase16 = "0x[0-9a-fA-F]+";
 static const char* PatternIntFloat = "[0-9]+\\.[0-9]+";
-static const char* PatternIdentifier = "[@_A-Za-z][\\._A-Za-z0-9]*";
+static const char* PatternIdentifier = "[@_A-Za-z][\\._A-Za-z0-9]*";*/
 
-static const char* keywords = {
-    "func", "class", "enum", "import", "var", "private", "static",
-    "if","elseif", "else", "match", "for", "break", "continue", "return", "true", "false", "super", NULL
-};
+/*
+Keywords, sorted from smallest to largest:
 
-results_t lexer_parse(char* buffer) {
+if
+var
+for
+func
+enum
+else
+true
+class
+match
+break
+false
+super
+import
+static
+elseif
+private
+continue
+*/
+
+void lexer_add_token(Lexer* lex, Token token) {
+    if(lex->tokenVecLength+1 > lex->tokenVecCapacity) {
+        lex->tokenVector = (Token*)realloc(lex->tokenVector,(lex->tokenVecCapacity+TOKEN_ALLOCATION_AMOUNT)*sizeof(Token));
+        lex->tokenVecCapacity += TOKEN_ALLOCATION_AMOUNT;
+    }
+    lex->tokenVector[lex->tokenVecLength++] = token;
+}
+
+int lexer_next(Lexer* lex) {
+    
+    return 1;
+}
+
+Lexer lexer_parse(const char* filename, const char* buffer) {
     /*results_t res = lexer(buffer,9+18,*/ /* Get ready for this long list... */
     /*    "Newline", "\n",
         "Comment", "\\/\\*.*?\\*\\/",
@@ -46,9 +80,17 @@ results_t lexer_parse(char* buffer) {
         "KeywordFalse", "false",
         "KeywordSuper", "super"*/ /*18*/
     /*);*/
-    /*int i;
-    for(i = 0 ; i < res.ntoks ; i++ ){
-		printf("TYPE : %s | TEXT : %s\n",res.toks[i].type, res.toks[i].str);
-	}*/
-    /*return res;*/
+    Lexer lex;
+    lex.filename = filename;
+    lex.buffer = buffer;
+    lex.start = buffer;
+    lex.pos = buffer;
+    lex.line = 1;
+    lex.col = 0;
+    lex.length = strlen(buffer);
+    lex.tokenVector = (Token*)malloc(1);
+    lex.tokenVecCapacity = 0;
+    lex.tokenVecLength = 0;
+    while(lexer_next(&lex)) {};
+    return lex;
 }
