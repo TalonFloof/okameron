@@ -88,7 +88,7 @@ static void tokenize(char * source){
 	int i;
 	int j;
 	for(i = 0 ; i < strlen(source) ; i++){
-		if(source[i] == ' ' || source[i] == '\r' || source[i] == '\t') {
+		if((source[i] == ' ' && state->buffer[0] != '"') || source[i] == '\r' || source[i] == '\t') {
 			continue;
 		}
 		incbuffer(source[i]);
@@ -117,7 +117,7 @@ static void tokenize(char * source){
 			success = false;
 			for(j = 0 ; j < state->npatterns ; j++){
 				if(isvalid(state->patterns[j].regex, state->buffer)){
-					recentname = state->patterns[j].name;	
+					recentname = state->patterns[j].name;
 					success = true;
 				}
 			}
