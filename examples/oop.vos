@@ -1,4 +1,4 @@
-import vos.System
+/*import vos.System*/
 
 class Foo {
     var x int

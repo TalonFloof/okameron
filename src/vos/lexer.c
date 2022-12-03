@@ -1,89 +1,41 @@
 #include <stdio.h>
-#include <lexer.h>
 #include <error.h>
 #include <lex.h>
-#include <tgc.h>
 
-/*#define PEEK_CUR ((int)lexer->source[lexer->offset])
-#define PEEK_NXT ((lexer->offset < lexer->length) ? lexer->source[lexer->offset+1] : 0)
+results_t lexer_parse(char* buffer) {
+    results_t res = lexer(buffer,9+18, /* Get ready for this long list... */
+        "Newline", "\n",
+        "Comment", "\\/\\*.*?\\*\\/",
+        "String", "[\"]([^\"\\\\\\n]|\\\\.|\\\\\\n)*[\"]",
+        "Integer", "[0-9]+",
+        "Integer", "0x[0-9a-fA-F]+",
+        "Integer", "0b[0-1]+",
+        "Float", "[0-9]+\\.[0-9]+",
+        "Identifier", "[@_A-Za-z][\\._A-Za-z0-9]*",
+        "Symbol", "\\+|-|\\*|\\/|%|=|!|<|>|:|&|\\||~|\\^|\\(|\\)|\\[|\\]|\\{|\\}", /*9*/
 
-static const char* keywords[] = {
-    "func", "class", "enum", "include", "var", "private",
-    "const", "if", "elseif", "else", "match", "for", "break", "continue", 
-    "return", "true", "false", "super", NULL*/
-    /*"+", "-", "*", "/", "%", "==", "!=", "<=", ">=", "<<", ">>>", ">>",
-    ":=", "=",
-    "<", ">", "&&", "||", "!", "~", "^", "&", "|", "(", ")", "[", "]", "{", "}", NULL*/
-/*};
-
-static bool is_alpha(int c) {
-    if (c == '_') return true;
-    if (c == '@') return true;
-    return isalpha(c);
-}
-
-static bool is_string(int c) {
-    return ((c == '"') || (c == '\''));
-}
-
-static bool is_identifier(int c) {
-    return ((isalpha(c)) || (isdigit(c)) || (c == '_'));
-}
-
-static bool is_operator(int c) {
-    return ((c == '+') || (c == '-') || (c == '*') || (c == '/') ||
-            (c == '<') || (c == '>') || (c == '!') || (c == '=') ||
-            (c == '|') || (c == '&') || (c == '^') || (c == '%') ||
-            (c == '~') || (c == '.') || (c == ':') ||
-            (c == ',') || (c == '{') || (c == '}') ||
-            (c == '[') || (c == ']') || (c == '(') || (c == ')') );
-}
-
-static bool is_whitespace(int c) {
-    return ((c == ' ') || (c == '\r') || (c == '\t') || (c == '\v') || (c == '\f'));
-}
-
-static bool is_comment(int c1, int c2) {
-    return ((c1 == '/' && c2 == '*') || (c1 == '*' && c2 == '/'));
-}
-
-Lexer* lexer_create(const char *source, size_t len) {
-    Lexer* lexer = malloc(sizeof(Lexer));
-    if (!lexer) return NULL;
-    memset(lexer,0,sizeof(Lexer));
-    lexer->source = source;
-    lexer->lineno = 1;
-    lexer->colno = 0;
-    lexer->length = len;
-    lexer->offset = 0;
-    lexer->position = 0;
-
-    return lexer;
-}
-
-void lexer_scan_comment(Lexer* lexer) {
-
-}
-
-Token lexer_next(Lexer* lexer) {
-    int c;
-    Token token;
-
-loop:
-    c = PEEK_CUR;
-
-    if(is_whitespace(c)) {lexer->offset++; lexer->position++; goto loop;}
-    if(c == '\n') {lexer->offset++; lexer->position++; lexer->lineno++; lexer->colno = 0; goto loop;}*/
-    /*if(is_comment(c,PEEK_NXT)) {lexer_scan_comment(lexer); goto return_token;}*/
-/*    error("Unknown token at %i:%i\n", lexer->lineno, lexer->colno);
-return_token:
-    return token;
-}*/
-
-void lexer_parse(char* buffer) {
-    results_t result = lexer(&vosGC,buffer,2, /* Get ready for this long list... */
-        "Comment", "\\/\\*[\\s\\S]*?\\*\\/",
-        "String", "\"(?:\\.|(\\\\\\\")|[^\\\"\"\\n])*\""
+        "KeywordFunc", "func",
+        "KeywordClass", "class",
+        "KeywordEnum", "enum",
+        "KeywordImport", "import",
+        "KeywordVar", "var",
+        "KeywordPrivate", "private",
+        "KeywordConst", "const",
+        "KeywordIf", "if",
+        "KeywordElseif", "elseif",
+        "KeywordElse", "else",
+        "KeywordMatch", "match",
+        "KeywordFor", "for",
+        "KeywordBreak", "break",
+        "KeywordContinue", "continue",
+        "KeywordReturn", "return",
+        "KeywordTrue", "true",
+        "KeywordFalse", "false",
+        "KeywordSuper", "super" /*18*/
     );
-
+    int i;
+    for(i = 0 ; i < res.ntoks ; i++ ){
+		printf("TYPE : %s | TEXT : %s\n",res.toks[i].type, res.toks[i].str);
+	}
+    return res;
 }

@@ -24,14 +24,13 @@ SOFTWARE.
 
 /* -- HEADER GUARDS -- */
 #ifndef LEX_H
-#define LEX_H
+#define LEX_H 1
 /* -- INCLUDES -- */
 #include<stdlib.h>
 #include<stdarg.h>
 #include<stdbool.h>
 #include<string.h>
 #include<regex.h>
-#include<tgc.h>
 /* -- MACROS -- */
 #define MAX_NUM_MATCHES 16
 /* -- DATA STRUCTURES -- */
@@ -45,7 +44,7 @@ typedef struct {
 	char * str;
 } token_t;
 
-struct state_t {
+static struct state_t {
 	regex_t * obj;
 	pattern_t * patterns;
 	unsigned int npatterns;
@@ -53,50 +52,55 @@ struct state_t {
 	unsigned int ntokens;
 	char * buffer;
 	unsigned int buffsize;
-} * state;
+} *state;
 
 typedef struct {
 	token_t * toks;
 	unsigned int ntoks;
 } results_t;
 /* -- PROTOTYPES -- */
-results_t lexer(tgc_t* gc, char * source, unsigned int npatterns, ...);
-static void tokenize(tgc_t* gc, char * source); 
-static void addtoken(tgc_t* gc, char * tokenpattern, char * tokenname);
-static void releasetoken(tgc_t* gc, const char * typename);
-static void incbuffer(tgc_t* gc, const char c);
-static void decbuffer(tgc_t* gc);
-static void resetbuffer(tgc_t* gc);
-static bool isvalid(tgc_t* gc, const char * pattern, const char * target);
-static void initstateconfig(tgc_t* gc, bool new);
+static results_t lexer(char * source, unsigned int npatterns, ...);
+static void tokenize(char * source); 
+static void addtoken(char * tokenpattern, char * tokenname);
+static void releasetoken(const char * typename);
+static void incbuffer(const char c);
+static void decbuffer(void);
+static void resetbuffer(void);
+static bool isvalid(const char * pattern, const char * target);
+static void initstateconfig(bool new);
 /* -- IMPLEMENTATION */
-results_t lexer(tgc_t* gc, char * source, unsigned int npatterns, ...){
-	initstateconfig(gc,true);
+static results_t lexer(char * source, unsigned int npatterns, ...){
+	initstateconfig(true);
 	va_list args;
-	va_start(args, npatterns);
-    int i;
+	va_start(args, npatterns);		
+	int i;
 	for(i = 0 ; i < npatterns; i++){
-		addtoken(gc,va_arg(args, char *), va_arg(args, char *));
+		addtoken(va_arg(args, char *), va_arg(args, char *));
 	}
 	va_end(args);
-	tokenize(gc,source);
+	tokenize(source);
 	results_t retval = {.toks = state->tokens, .ntoks = state->ntokens};
-	initstateconfig(gc,false);
+	initstateconfig(false);
 	return retval;
 }
 
-static void tokenize(tgc_t* gc, char * source){
-    int i;
-    int j;
+static void tokenize(char * source){
+	int i;
+	int j;
 	for(i = 0 ; i < strlen(source) ; i++){
-		if(source[i] == ' ' || source[i] == '\t' || source[i] == '\r') {
+		if(source[i] == ' ' || source[i] == '\r' || source[i] == '\t') {
 			continue;
 		}
-		incbuffer(gc, source[i]);
+		incbuffer(source[i]);
 		bool success = false;
 		char * recentname = NULL;
 		for(j = 0 ; j < state->npatterns; j++){
-			if(isvalid(gc, state->patterns[j].regex, state->buffer)){
+			if(strcmp(state->patterns[j].name,"Symbol") == 0) {
+				if((source[i] == '/' && source[i+1] == '*') || (source[i] == '*' && (source[i-1] == '/' || source[i+1] == '/'))) {
+					break;
+				}
+			}
+			if(isvalid(state->patterns[j].regex, state->buffer)){
 				recentname = state->patterns[j].name;
 				success = true;
 				break;
@@ -105,85 +109,91 @@ static void tokenize(tgc_t* gc, char * source){
 		while(success){
 			if(i == strlen(source) - 1){
 				if(recentname != NULL){
-					releasetoken(gc, recentname);
+					releasetoken(recentname);
 				}
 				break;
 			}
-			incbuffer(gc, source[++i]);
+			incbuffer(source[++i]);
 			success = false;
 			for(j = 0 ; j < state->npatterns ; j++){
-				if(isvalid(gc, state->patterns[j].regex, state->buffer)){
+				if(isvalid(state->patterns[j].regex, state->buffer)){
 					recentname = state->patterns[j].name;	
 					success = true;
 				}
 			}
 			if(!success){
 				i--;
-				decbuffer(gc);
-				releasetoken(gc, recentname);
-				resetbuffer(gc);
+				decbuffer();
+				releasetoken(recentname);
+				resetbuffer();
 				break;
 			}
 		}
 	}
 }
 
-static void addtoken(tgc_t* gc, char * tokenpattern, char * tokenname){
-	state->patterns = tgc_realloc(gc, state->patterns, (sizeof(pattern_t)*(state->npatterns+1)));
+static void addtoken(char * tokenpattern, char * tokenname){
+	state->patterns = realloc(state->patterns, (sizeof(pattern_t)*(state->npatterns+1)));
 	pattern_t tmp  = {.name = tokenname, .regex = tokenpattern};
 	state->patterns[state->npatterns++] = tmp;
 }
 
-static void releasetoken(tgc_t* gc, const char * typename){
-	state->tokens = tgc_realloc(gc, state->tokens, (sizeof(token_t)*(state->ntokens+1)));
+static void releasetoken(const char * typename){
+	state->tokens = realloc(state->tokens, (sizeof(token_t)*(state->ntokens+1)));
 	token_t tmp = {.type = (char*)typename, .str = state->buffer};
 	state->tokens[state->ntokens++] = tmp;
 }
 
-static void incbuffer(tgc_t* gc, const char c){
-	state->buffer = tgc_realloc(gc, state->buffer, (state->buffsize+1));
+static void incbuffer(const char c){
+	state->buffer = realloc(state->buffer, (state->buffsize+2));
 	state->buffer[state->buffsize++] = c;
 	state->buffer[state->buffsize] = '\0';
 }
 
-static void decbuffer(tgc_t* gc){
+static void decbuffer(void){
 	if(state->buffsize != 0){
-		state->buffer = tgc_realloc(gc, state->buffer, (state->buffsize-1));
+		state->buffer = realloc(state->buffer, (state->buffsize-1));
 		state->buffsize--;
+		state->buffer[state->buffsize] = '\0';
 	}
 }
 
-static void resetbuffer(tgc_t* gc){
-	tgc_free(gc, state->buffer);
-	state->buffer = tgc_alloc(gc, 1);
+static void resetbuffer(void){
+	state->buffer = malloc(1);
 	state->buffsize = 0;
 }
 
-static bool isvalid(tgc_t* gc, const char * pattern, const char * target){
+static bool isvalid(const char * pattern, const char * target){
 	regcomp(state->obj, pattern, REG_EXTENDED);
-	regmatch_t * matches = tgc_alloc(gc, sizeof(regmatch_t) * MAX_NUM_MATCHES);
+	regmatch_t * matches = malloc(sizeof(regmatch_t) * MAX_NUM_MATCHES);
 	if(regexec(state->obj, target, MAX_NUM_MATCHES, matches, 0) != 0){
+		free(matches);
 		return false;
 	}
 	const unsigned int len = strlen(target);
 	int i;
 	for(i = 0 ; i < MAX_NUM_MATCHES ; i++){
 		if(matches[i].rm_so == 0 && matches[i].rm_eo == len && matches[i].rm_eo != 0){
+			free(matches);
 			return true;
 		} else if (matches[i].rm_so == -1){
 			break;
 		}
 	}
+	free(matches);
 	return false;
 }
 
-static void initstateconfig(tgc_t* gc, bool new) {
+static void initstateconfig(bool new){
 	if(new){
-		state = tgc_alloc(gc, sizeof(struct state_t));
-		state->obj = tgc_alloc(gc, sizeof(regex_t));
-		state->patterns = tgc_alloc(gc, 1);
-		state->tokens = tgc_alloc(gc, 1);
-		state->buffer = tgc_alloc(gc, 1);
+		state = malloc(sizeof(struct state_t));
+		state->obj = malloc(sizeof(regex_t));
+		state->patterns = malloc(1);
+		state->tokens = malloc(1);
+		state->ntokens = 0;
+		state->npatterns = 0;
+		state->buffsize = 0;
+		state->buffer = malloc(1);
 	}
 }
 #endif
