@@ -3,8 +3,9 @@
 
 #include <lex.h>
 
-typedef struct {
-    
+typedef enum {
+    ENUM_DECLARE, FUNCTION_DECLARE, VARIABLE_DECLARE,
+    CLASS_DECLARE,
 } ASTNodeTypes;
 
 #endif

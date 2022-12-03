@@ -1,6 +1,18 @@
 func main() {
-    var a string = "Foo" /* Variable is a string, this type was not inferred. */
+    var a String = "Foo" /* Variable is a string, this type was not inferred. */
     b := "Baz" /* Variable is a string, this type was inferred. */
 
     System.println(a,b)
 }
+
+/*
+The available builtin types are:
+
+Int: Signed 64-bit Integer
+U8/I8: Unsigned/Signed 8-bit Integer
+U16/I16: Unsigned/Signed 16-bit Integer
+U32/I32: Unsigned/Signed 32-bit Integer
+U64/I64: Unsigned/Signed 64-bit Integer
+String: A Vos String
+
+*/

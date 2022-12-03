@@ -26,13 +26,17 @@ SOFTWARE.
 #ifndef LEX_H
 #define LEX_H 1
 /* -- INCLUDES -- */
+#include<stdint.h>
 #include<stdlib.h>
 #include<stdarg.h>
 #include<stdbool.h>
 #include<string.h>
 #include<regex.h>
+
+#include<error.h>
 /* -- MACROS -- */
-#define MAX_NUM_MATCHES 16
+#define MAX_NUM_MATCHES 6
+#define MAX_NUM_PATTERNS (9+18)
 /* -- DATA STRUCTURES -- */
 typedef struct {
 	char * name;
@@ -52,6 +56,14 @@ static struct state_t {
 	unsigned int ntokens;
 	char * buffer;
 	unsigned int buffsize;
+
+	uint32_t line;
+	uint32_t col;
+
+	uint32_t prev_col;
+
+	uint32_t start_line;
+	uint32_t start_col;
 } *state;
 
 typedef struct {
@@ -62,12 +74,12 @@ typedef struct {
 static results_t lexer(char * source, unsigned int npatterns, ...);
 static void tokenize(char * source); 
 static void addtoken(char * tokenpattern, char * tokenname);
-static void releasetoken(const char * typename);
+static void releasetoken(const char * typename_);
 static void incbuffer(const char c);
 static void decbuffer(void);
 static void resetbuffer(void);
 static bool isvalid(const char * pattern, const char * target);
-static void initstateconfig(bool new);
+static void initstateconfig(bool new_);
 /* -- IMPLEMENTATION */
 static results_t lexer(char * source, unsigned int npatterns, ...){
 	initstateconfig(true);
@@ -79,6 +91,9 @@ static results_t lexer(char * source, unsigned int npatterns, ...){
 	}
 	va_end(args);
 	tokenize(source);
+	if(state->buffsize > 1) {
+		err("Unknown token \"\x1b[1m%c\x1b[0;31m\" at %i:%i", state->buffer[0], state->start_line, state->start_col-1);
+	}
 	results_t retval = {.toks = state->tokens, .ntoks = state->ntokens};
 	initstateconfig(false);
 	return retval;
@@ -88,8 +103,16 @@ static void tokenize(char * source){
 	int i;
 	int j;
 	for(i = 0 ; i < strlen(source) ; i++){
-		if((source[i] == ' ' && state->buffer[0] != '"') || source[i] == '\r' || source[i] == '\t') {
-			continue;
+		if((source[i] == ' ') || source[i] == '\r' || source[i] == '\t') {
+			if(source[i] == ' ' || source[i] == '\t')
+				state->col++;
+			if(source[i] == ' ' && state->buffsize > 0) {
+				if(state->buffer[0] != '"') {
+					continue;
+				}
+			} else {
+				continue;
+			}
 		}
 		incbuffer(source[i]);
 		bool success = false;
@@ -109,8 +132,11 @@ static void tokenize(char * source){
 		while(success){
 			if(i == strlen(source) - 1){
 				if(recentname != NULL){
-					releasetoken(recentname);
+					if(strcmp(recentname,"Comment") != 0) {
+						releasetoken(recentname);
+					}
 				}
+				resetbuffer();
 				break;
 			}
 			incbuffer(source[++i]);
@@ -122,9 +148,13 @@ static void tokenize(char * source){
 				}
 			}
 			if(!success){
+				state->start_line = state->line;
+				state->start_col = state->col;
 				i--;
 				decbuffer();
-				releasetoken(recentname);
+				if(strcmp(recentname,"Comment") != 0) {
+					releasetoken(recentname);
+				}
 				resetbuffer();
 				break;
 			}
@@ -133,39 +163,51 @@ static void tokenize(char * source){
 }
 
 static void addtoken(char * tokenpattern, char * tokenname){
-	state->patterns = realloc(state->patterns, (sizeof(pattern_t)*(state->npatterns+1)));
 	pattern_t tmp  = {.name = tokenname, .regex = tokenpattern};
 	state->patterns[state->npatterns++] = tmp;
 }
 
-static void releasetoken(const char * typename){
-	state->tokens = realloc(state->tokens, (sizeof(token_t)*(state->ntokens+1)));
-	token_t tmp = {.type = (char*)typename, .str = state->buffer};
+static void releasetoken(const char * typename_){
+	state->tokens = (token_t*)realloc(state->tokens, (sizeof(token_t)*(state->ntokens+1)));
+	token_t tmp = {.type = (char*)typename_, .str = state->buffer};
 	state->tokens[state->ntokens++] = tmp;
 }
 
 static void incbuffer(const char c){
-	state->buffer = realloc(state->buffer, (state->buffsize+2));
+	if(c == '\n') {
+		state->line++;
+		state->prev_col = state->col;
+		state->col = 0;
+	} else {
+		state->col++;
+	}
+	state->buffer = (char*)realloc(state->buffer, (state->buffsize+2));
 	state->buffer[state->buffsize++] = c;
 	state->buffer[state->buffsize] = '\0';
 }
 
 static void decbuffer(void){
-	if(state->buffsize != 0){
-		state->buffer = realloc(state->buffer, (state->buffsize-1));
+	if(state->buffsize != 0) {
+		if(state->buffer[state->buffsize-1] == '\n') {
+			state->line--;
+			state->col = state->prev_col;
+		} else {
+			state->col--;
+		}
+		state->buffer = (char*)realloc(state->buffer, (state->buffsize-1));
 		state->buffsize--;
 		state->buffer[state->buffsize] = '\0';
 	}
 }
 
 static void resetbuffer(void){
-	state->buffer = malloc(1);
+	state->buffer = (char*)malloc(1);
 	state->buffsize = 0;
 }
 
 static bool isvalid(const char * pattern, const char * target){
 	regcomp(state->obj, pattern, REG_EXTENDED);
-	regmatch_t * matches = malloc(sizeof(regmatch_t) * MAX_NUM_MATCHES);
+	regmatch_t * matches = (regmatch_t*)malloc(sizeof(regmatch_t) * MAX_NUM_MATCHES);
 	if(regexec(state->obj, target, MAX_NUM_MATCHES, matches, 0) != 0){
 		free(matches);
 		return false;
@@ -184,16 +226,20 @@ static bool isvalid(const char * pattern, const char * target){
 	return false;
 }
 
-static void initstateconfig(bool new){
-	if(new){
-		state = malloc(sizeof(struct state_t));
-		state->obj = malloc(sizeof(regex_t));
-		state->patterns = malloc(1);
-		state->tokens = malloc(1);
+static void initstateconfig(bool new_){
+	if(new_){
+		state = (struct state_t*)malloc(sizeof(struct state_t));
+		state->obj = (regex_t*)malloc(sizeof(regex_t));
+		state->patterns = (pattern_t*)malloc(sizeof(pattern_t)*MAX_NUM_PATTERNS);
+		state->tokens = (token_t*)malloc(1);
 		state->ntokens = 0;
 		state->npatterns = 0;
 		state->buffsize = 0;
-		state->buffer = malloc(1);
+		state->buffer = (char*)malloc(1);
+		state->line = 1;
+		state->col = 0;
+		state->start_line = 1;
+		state->start_col = 0;
 	}
 }
 #endif
