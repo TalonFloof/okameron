@@ -1,2 +1,2 @@
 build:
-	g++ -std=c++11 -Wall -Isrc/vos/headers -Isrc/utils src/vos/*.cpp src/vos/targets/*.cpp -o vos
+	gcc -ansi -Wall -Isrc/vos/headers -Isrc/utils src/vos/*.c src/vos/targets/*.c -o vos
