@@ -1,9 +1,9 @@
 import vos.System
 
 func main() {
-    a := i64(0)
-    b := i64(0)
-    c := i64(1)
+    a := 0
+    b := 0
+    c := 1
     System.println(a+b+c)
     for c < 92 {
         a = b
