@@ -1,6 +1,6 @@
 func main() {
-    var a string = "Foo" // Variable is a string, this type was not inferred.
-    b := "Baz" // Variable is a string, this type was inferred.
+    var a string = "Foo" /* Variable is a string, this type was not inferred. */
+    b := "Baz" /* Variable is a string, this type was inferred. */
 
     System.println(a,b)
 }

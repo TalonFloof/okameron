@@ -2,7 +2,7 @@ import vos.System
 
 class Foo {
     var x int
-    // Variables CANNOT be initialized outside of init!
+    /* Variables CANNOT be initialized outside of init! */
 
     func init(a int) {
         x = a
@@ -16,7 +16,7 @@ class Bar {
     }
 }
 
-// Single Inheritance is also supported
+/* Single Inheritance is also supported */
 class Bird {
     func talk() {
         System.println("Tweet!")
@@ -36,10 +36,10 @@ func main() {
     snowyOwl.talk()
 }
 
-// If compiling to C, you can add the @struct attribute to turn a class into a regular C Struct
+/* If compiling to C, you can add the @struct attribute to turn a class into a regular C Struct
 
-// For instance, if I wanted to implement the LimineFramebuffer struct in Vos, It would look something like this.
-// Limine is a really cool bootloader btw (https://github.com/limine-bootloader/limine)
+   For instance, if I wanted to implement the LimineFramebuffer struct in Vos, It would look something like this.
+   Limine is a really cool bootloader btw (https://github.com/limine-bootloader/limine) */
 
 /*@struct
 class LimineFramebuffer {

@@ -2,6 +2,7 @@
 #define _VOS_LEXER_H 1
 
 #include <stdint.h>
+#include <stddef.h>
 
 typedef enum {
     COMMENT,
@@ -59,21 +60,6 @@ typedef enum {
     RBRACE
 } TokenType;
 
-typedef struct {
-    TokenType type;
-    uint32_t lineno; /* Starts at 1 */
-    uint32_t colno; /* Starts at 0 */
-    uint32_t length; /* In bytes not in UTF-8 characters */
-    const char* value;
-} Token;
-
-typedef struct {
-    const char* source;
-    uint32_t length;
-    uint32_t lineno;
-    uint32_t colno;
-    uint32_t offset;
-    uint32_t position;
-} Lexer;
+void lexer_parse(char* buffer);
 
 #endif
