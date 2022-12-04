@@ -76,10 +76,6 @@ typedef struct {
     uint32_t lineno;
     uint32_t colno;
     uint32_t length;
-
-    Token* tokenVector;
-    uint32_t tokenVecCapacity;
-    uint32_t tokenVecLength;
 } Lexer;
 
 Lexer lexer_parse(const char* filename, const char* buffer);

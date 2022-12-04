@@ -6,8 +6,6 @@
 #include <utf8.h>
 #include <ctype.h>
 
-#define TOKEN_ALLOCATION_AMOUNT 128 /* Lowering this number will impact performance, but will improve memory usage. */
-
 utf8_int32_t lexer_peekChar(Lexer* lex) {
     utf8_int32_t c;
     utf8codepoint(lex->pos, &c);
@@ -31,12 +29,9 @@ utf8_int32_t lexer_nextChar(Lexer* lex) {
 void lexer_newline(Lexer* lex) {lex->pos++; lex->start++; lex->colno = 0; lex->lineno++;}
 
 void lexer_add_token(Lexer* lex, TokenType type) {
-    if(lex->tokenVecLength+1 > lex->tokenVecCapacity) {
-        lex->tokenVector = (Token*)realloc(lex->tokenVector,(lex->tokenVecCapacity+TOKEN_ALLOCATION_AMOUNT)*sizeof(Token));
-        lex->tokenVecCapacity += TOKEN_ALLOCATION_AMOUNT;
-    }
-    lex->tokenVector[lex->tokenVecLength++] = (Token){.type = type, .start = lex->start, .length = ((uintptr_t)(lex->pos))-((uintptr_t)(lex->start))};
+    Token tok = (Token){.type = type, .start = lex->start, .length = ((uintptr_t)(lex->pos))-((uintptr_t)(lex->start))};
     lex->start = lex->pos;
+    
 }
 
 void lexer_scan_comment(Lexer* lex) {
@@ -261,18 +256,14 @@ ret:
     return 1;
 }
 
-Lexer lexer_parse(const char* filename, const char* buffer) {
+Lexer lexer_new(const char* filename, const char* buffer) {
     Lexer lex;
     lex.filename = filename;
     lex.buffer = buffer;
     lex.start = buffer;
     lex.pos = buffer;
     lex.length = utf8len(buffer);
-    lex.tokenVector = (Token*)malloc(1);
-    lex.tokenVecCapacity = 0;
-    lex.tokenVecLength = 0;
     lex.lineno = 1;
     lex.colno = 0;
-    while(lexer_next(&lex)) {};
     return lex;
 }

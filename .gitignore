@@ -1,4 +1,5 @@
 *.o
+*.a
 /bootstrap/
 /bootstrap/**
 /vos
