@@ -1,10 +1,9 @@
-#include <stdio.h>
-#include <error.h>
 #include <lexer.h>
-#include <stdlib.h>
-#include <string.h>
+#include <vos.h>
 #include <utf8.h>
-#include <ctype.h>
+#include <vos_ctype.h>
+
+#define err ((VosDelegate*)(lex->delegate))->error_handler
 
 utf8_int32_t lexer_peekChar(Lexer* lex) {
     utf8_int32_t c;
@@ -28,10 +27,10 @@ utf8_int32_t lexer_nextChar(Lexer* lex) {
 
 void lexer_newline(Lexer* lex) {lex->pos++; lex->start++; lex->colno = 0; lex->lineno++;}
 
-void lexer_add_token(Lexer* lex, TokenType type) {
+Token lexer_add_token(Lexer* lex, TokenType type) {
     Token tok = (Token){.type = type, .start = lex->start, .length = ((uintptr_t)(lex->pos))-((uintptr_t)(lex->start))};
     lex->start = lex->pos;
-    
+    return tok;
 }
 
 void lexer_scan_comment(Lexer* lex) {
@@ -94,7 +93,7 @@ TokenType lexer_keyword(const char* base, int len) {
     }
 }
 
-void lexer_scan_identifier(Lexer* lex) {
+Token lexer_scan_identifier(Lexer* lex) {
     utf8_int32_t c = lexer_peekChar(lex);
     while((c=='_')||(c=='.')||isalpha(c)||isdigit(c)||(c>=0xc0)) {
         c = lexer_nextChar(lex);
@@ -107,8 +106,7 @@ void lexer_scan_identifier(Lexer* lex) {
             err("%s %i:%i Identifier \"vos\" is not fluffy enough. Did you mean \"🦊\"?", lex->filename, lex->lineno, lex->colno); /* Haha, da funny mesg */
         }
     }
-
-    lexer_add_token(lex, lexer_keyword(lex->start,((uintptr_t)(lex->pos))-((uintptr_t)(lex->start))));
+    return lexer_add_token(lex, lexer_keyword(lex->start,((uintptr_t)(lex->pos))-((uintptr_t)(lex->start))));
 }
 
 static int is_operator (utf8_int32_t c) {
@@ -120,7 +118,7 @@ static int is_operator (utf8_int32_t c) {
             (c == '(') || (c == ')') );
 }
 
-void lexer_scan_operator(Lexer* lex) {
+Token lexer_scan_operator(Lexer* lex) {
     utf8_int32_t c = lexer_nextChar(lex);
     utf8_int32_t c2 = lexer_peekChar(lex);
 
@@ -203,10 +201,10 @@ void lexer_scan_operator(Lexer* lex) {
             err("%s %i:%i Unrecognized Operator", lex->filename, lex->lineno, lex->colno);
         }
     }
-    lexer_add_token(lex, token);
+    return lexer_add_token(lex, token);
 }
 
-void lexer_scan_number(Lexer* lex) {
+Token lexer_scan_number(Lexer* lex) {
     TokenType type = TOKEN_INTEGER;
     utf8_int32_t c = lexer_peekChar(lex);
     while((c=='.')||isdigit(c)) {
@@ -218,10 +216,10 @@ void lexer_scan_number(Lexer* lex) {
     lex->pos = utf8rcodepoint(lex->pos,&c);
     lex->colno--;
 
-    lexer_add_token(lex, type);
+    return lexer_add_token(lex, type);
 }
 
-void lexer_scan_string(Lexer* lex) {
+Token lexer_scan_string(Lexer* lex) {
     lexer_nextChar(lex);
     utf8_int32_t c = lexer_nextChar(lex);
     while(1) {
@@ -234,30 +232,29 @@ void lexer_scan_string(Lexer* lex) {
         if(c == '"') {break;}
         c = lexer_nextChar(lex);
     }
-    lexer_add_token(lex, TOKEN_STRING);
+    return lexer_add_token(lex, TOKEN_STRING);
 }
 
-int lexer_next(Lexer* lex) {
+Token lexer_next(Lexer* lex) {
     utf8_int32_t c;
 loop:
     c = lexer_peekChar(lex);
 
-    if(c=='\0') {return 0;}
+    if(c=='\0') {return lexer_add_token(lex, TOKEN_NULL);}
     if((c==' ')||(c=='\t')||(c=='\v')||(c=='\f')||(c=='\r')) {lex->pos++; lex->start++; if(c!='\r'){lex->colno++;} goto loop;}
     if(c=='\n') {lexer_newline(lex); goto loop;}
     if((c=='/') && (lexer_peekNextChar(lex)=='*')) {lexer_scan_comment(lex); goto loop;}
-    if((c=='_')||isalpha(c)||(c>=0xc0)) {lexer_scan_identifier(lex); goto ret;}
-    if(is_operator(c)) {lexer_scan_operator(lex); goto ret;}
-    if(isdigit(c)) {lexer_scan_number(lex); goto ret;}
-    if(c=='"') {lexer_scan_string(lex); goto ret;}
+    if((c=='_')||isalpha(c)||(c>=0xc0)) {return lexer_scan_identifier(lex);}
+    if(is_operator(c)) {return lexer_scan_operator(lex);}
+    if(isdigit(c)) {return lexer_scan_number(lex);}
+    if(c=='"') {return lexer_scan_string(lex);}
 
     err("%s %i:%i Unrecognized Token", lex->filename, lex->lineno, lex->colno);
-ret:
-    return 1;
 }
 
-Lexer lexer_new(const char* filename, const char* buffer) {
+Lexer lexer_new(void* delegate, const char* filename, const char* buffer) {
     Lexer lex;
+    lex.delegate = delegate;
     lex.filename = filename;
     lex.buffer = buffer;
     lex.start = buffer;

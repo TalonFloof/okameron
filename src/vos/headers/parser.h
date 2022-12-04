@@ -2,7 +2,7 @@
 #define _VOS_PARSER_H 1
 
 #include <stdint.h>
-#include "../../utils/array.h"
+#include "../../shared/headers/vos_array.h"
 
 typedef enum {
     NULL_NODE = 0, /* Self-explanitory */
@@ -43,11 +43,12 @@ typedef struct {
     
 } ASTNode_Loop;
 
-typedef struct {
-    void* lexer; /* Must be void pointer to prevent a cyclic dependency between the two structs */
-
+typedef struct { /* Must be void pointers to prevent cyclic dependency issues */
+    void* delegate;
+    VoidPtrArray lexers; 
 } Parser;
 
-void parser_init(void* lex, Parser* parser);
+Parser* parser_new(void* compiler);
+void parser_free(Parser* parser);
 
 #endif

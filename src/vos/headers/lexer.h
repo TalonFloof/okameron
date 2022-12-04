@@ -69,6 +69,8 @@ typedef struct {
 } Token;
 
 typedef struct {
+    void* delegate;
+
     const char* filename;
     const char* buffer;
     const char* start;
@@ -78,6 +80,7 @@ typedef struct {
     uint32_t length;
 } Lexer;
 
-Lexer lexer_parse(const char* filename, const char* buffer);
+Lexer lexer_new(void* delegate, const char* filename, const char* buffer);
+Token lexer_next(Lexer* lex);
 
 #endif

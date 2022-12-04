@@ -9,14 +9,33 @@ typedef enum {
     TARGET_C
 } VosTargetType;
 
-typedef 
+typedef void* (*VosAllocateHandler)(size_t size);
+typedef void* (*VosReallocateHandler)(void* ptr, size_t newsize);
+typedef void  (*VosFreeHandler)(void* ptr);
+typedef void  (*VosErrorHandler)(const char* message,...);
 
 typedef struct {
     VosTargetType target;
-    Parser* parser;
 
+    /* These three functions MUST be implemented! */
+    VosAllocateHandler alloc;
+    VosReallocateHandler realloc;
+    VosFreeHandler free;
+    VosErrorHandler error_handler;
+} VosDelegate;
+
+typedef struct {
+    VosDelegate delegate;
+    Parser* parser;
 } VosCompiler;
 
-VosCompiler vos_create_compiler(VosTargetType target);
+typedef struct {
+    void* base;
+    uint64_t length;
+} VosCompilerOutput;
+
+VosCompiler* vos_create_compiler(VosDelegate delegate);
+VosCompilerOutput vos_compiler_run(VosCompiler* compiler, const char* filename, const char* buffer, uint32_t length);
+void vos_compiler_free(VosCompiler* compiler);
 
 #endif

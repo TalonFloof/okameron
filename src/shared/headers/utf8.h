@@ -29,6 +29,8 @@
 #ifndef SHEREDOM_UTF8_H_INCLUDED
 #define SHEREDOM_UTF8_H_INCLUDED
 
+#define UTF8_NO_STD_MALLOC
+
 #if defined(_MSC_VER)
 #pragma warning(push)
 
@@ -44,7 +46,7 @@
 #endif
 
 #include <stddef.h>
-#include <stdlib.h>
+/*#include <stdlib.h>*/
 
 #if defined(_MSC_VER)
 #pragma warning(pop)
