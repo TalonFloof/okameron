@@ -1,3 +1,4 @@
+
 func main() {
     var a String = "Foo" /* Variable is a string, this type was not inferred. */
     b := "Baz" /* Variable is a string, this type was inferred. */

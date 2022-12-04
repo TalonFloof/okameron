@@ -4,6 +4,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#define err(...) fprintf(stderr, "\x1b[31mVoslang: "); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\x1b[0m\n"); exit(1);
+#define err(...) fprintf(stderr, "\r\x1b[2K\x1b[1;31mVoslang: "); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\x1b[0m\n"); exit(1);
 
 #endif

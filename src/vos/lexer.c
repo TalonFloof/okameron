@@ -36,16 +36,54 @@ private
 continue
 */
 
-void lexer_add_token(Lexer* lex, Token token) {
+void lexer_add_token(Lexer* lex, TokenType type) {
     if(lex->tokenVecLength+1 > lex->tokenVecCapacity) {
         lex->tokenVector = (Token*)realloc(lex->tokenVector,(lex->tokenVecCapacity+TOKEN_ALLOCATION_AMOUNT)*sizeof(Token));
         lex->tokenVecCapacity += TOKEN_ALLOCATION_AMOUNT;
     }
-    lex->tokenVector[lex->tokenVecLength++] = token;
+    lex->tokenVector[lex->tokenVecLength++] = (Token){.type = type, .start = lex->start, .length = ((uintptr_t)(lex->pos))-((uintptr_t)(lex->start))};
+    lex->start = lex->pos+1;
+}
+
+char lexer_peekChar(Lexer* lex) {
+    return *lex->pos;
+}
+
+char lexer_peekNextChar(Lexer* lex) {
+    if (lexer_peekChar(lex) == '\0') return '\0'; /* To keep us from looking past the end of the string */
+      return *(lex->pos + 1);
+}
+
+char lexer_nextChar(Lexer* lex) {
+    char c = lexer_peekChar(lex);
+    lex->pos++;
+    lex->colno++;
+    return c;
+}
+
+void lexer_newline(Lexer* lex) {lex->pos++; lex->start++; lex->colno = 0; lex->lineno++;}
+
+void lexer_scan_comment(Lexer* lex) {
+    lex->pos+=2;
+    lex->colno+=2;
+    while(1) {
+        char c = lexer_nextChar(lex);
+        if(c=='\0') {err("%i:%i Comment extends beyond EOF", lex->lineno, lex->colno);}
+        
+    }
 }
 
 int lexer_next(Lexer* lex) {
-    
+    char c;
+loop:
+    c = lexer_peekChar(lex);
+
+    if(c=='\0') {return 0;}
+    if((c==' ')||(c=='\t')||(c=='\v')||(c=='\f')||(c=='\r')) {lex->pos++; lex->start++; if(c!='\r'){lex->colno++;} goto loop;}
+    if(c=='\n') {lexer_newline(lex); goto loop;}
+
+    err("%i:%i Unreconized Token", lex->lineno, lex->colno);
+ret:
     return 1;
 }
 
@@ -85,12 +123,12 @@ Lexer lexer_parse(const char* filename, const char* buffer) {
     lex.buffer = buffer;
     lex.start = buffer;
     lex.pos = buffer;
-    lex.line = 1;
-    lex.col = 0;
     lex.length = strlen(buffer);
     lex.tokenVector = (Token*)malloc(1);
     lex.tokenVecCapacity = 0;
     lex.tokenVecLength = 0;
+    lex.lineno = 1;
+    lex.colno = 0;
     while(lexer_next(&lex)) {};
     return lex;
 }

@@ -35,9 +35,6 @@ typedef struct {
 	TokenType type;
 	const char* start;
     int length;
-
-    uint32_t line;
-    uint32_t col;
 } Token;
 
 typedef struct {
@@ -45,8 +42,8 @@ typedef struct {
     const char* buffer;
     const char* start;
     const char* pos;
-    uint32_t line;
-    uint32_t col;
+    uint32_t lineno;
+    uint32_t colno;
     uint32_t length;
 
     Token* tokenVector;

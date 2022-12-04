@@ -38,8 +38,8 @@ class SnowyOwl : Bird {
 }
 
 func main() {
-    bird := @Bird()
+    bird := Bird()
     bird.talk()
-    snowyOwl := @SnowyOwl()
+    snowyOwl := SnowyOwl()
     snowyOwl.talk()
 }
