@@ -2,6 +2,7 @@
 #define _VOS_PARSER_H 1
 
 #include <stdint.h>
+#include <stddef.h>
 #include "../../shared/headers/vos_array.h"
 
 typedef enum {
@@ -45,10 +46,13 @@ typedef struct {
 
 typedef struct { /* Must be void pointers to prevent cyclic dependency issues */
     void* delegate;
-    VoidPtrArray lexers; 
+    char* buffer;
+    uint32_t length;
+    VoidPtrArray lexers;
 } Parser;
 
 Parser* parser_new(void* compiler);
+void parser_run(Parser* parser, const char* filename, const char* buffer);
 void parser_free(Parser* parser);
 
 #endif

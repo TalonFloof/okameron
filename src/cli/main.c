@@ -4,7 +4,6 @@
 #include <stdarg.h>
 #include <sys/time.h>
 #include <string.h>
-#include <utf8.h>
 
 #include <vos.h>
 
@@ -43,10 +42,10 @@ int main(int argc, char* argv[]) {
         if(strcmp(argv[1],"build") == 0) {
             gettimeofday(&start, NULL);
             char* data = read_file(argv[2]);
-            VosDelegate delegate = (VosDelegate){.alloc = malloc, .realloc = realloc, .free = free, .error_handler = err};
+            VosDelegate delegate = (VosDelegate){.alloc = malloc, .realloc = realloc, .free = free, .error_handler = err, .printf = printf};
 
             VosCompiler* compiler = vos_create_compiler(delegate);
-            vos_compiler_run(compiler,argv[2],data,utf8len(data));
+            vos_compiler_run(compiler,argv[2],data);
 
             gettimeofday(&stop, NULL);
             double start_timestamp = (double)((start.tv_sec*1000)+(start.tv_usec/1000));

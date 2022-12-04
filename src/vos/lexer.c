@@ -252,15 +252,15 @@ loop:
     err("%s %i:%i Unrecognized Token", lex->filename, lex->lineno, lex->colno);
 }
 
-Lexer lexer_new(void* delegate, const char* filename, const char* buffer) {
-    Lexer lex;
-    lex.delegate = delegate;
-    lex.filename = filename;
-    lex.buffer = buffer;
-    lex.start = buffer;
-    lex.pos = buffer;
-    lex.length = utf8len(buffer);
-    lex.lineno = 1;
-    lex.colno = 0;
+Lexer* lexer_new(void* delegate, const char* filename, const char* buffer) {
+    Lexer* lex = ((VosDelegate*)delegate)->alloc(sizeof(Lexer));
+    lex->delegate = delegate;
+    lex->filename = filename;
+    lex->buffer = buffer;
+    lex->start = buffer;
+    lex->pos = buffer;
+    lex->length = utf8len(buffer);
+    lex->lineno = 1;
+    lex->colno = 0;
     return lex;
 }

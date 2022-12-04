@@ -8,8 +8,9 @@ VosCompiler* vos_create_compiler(VosDelegate delegate) {
     return comp;
 }
 
-VosCompilerOutput vos_compiler_run(VosCompiler* compiler, const char* filename, const char* buffer, uint32_t length) {
+VosCompilerOutput vos_compiler_run(VosCompiler* compiler, const char* filename, const char* buffer) {
     VosCompilerOutput output;
+    parser_run(compiler->parser,filename,buffer);
     return output;
 }
 

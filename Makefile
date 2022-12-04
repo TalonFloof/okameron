@@ -1,5 +1,5 @@
 build:
-	x86_64-elf-gcc -O2 -ansi -Wall -nostdlib -fPIE -c -Isrc/vos/headers -Isrc/shared/headers src/shared/*.c src/vos/*.c src/vos/targets/*.c
+	x86_64-elf-gcc -O2 -ansi -Wall -nostdlib -fPIC -c -Isrc/vos/headers -Isrc/shared/headers src/shared/*.c src/vos/*.c
 	ar rcs voslang.a *.o
 	rm *.o
 	ranlib voslang.a
