@@ -3,6 +3,7 @@
 #include <lexer.h>
 #include <stdlib.h>
 #include <string.h>
+#include <utf8.h>
 
 #define TOKEN_ALLOCATION_AMOUNT 128 /* Lowering this number will impact performance, but will improve memory usage. */
 
@@ -45,18 +46,22 @@ void lexer_add_token(Lexer* lex, TokenType type) {
     lex->start = lex->pos+1;
 }
 
-char lexer_peekChar(Lexer* lex) {
-    return *lex->pos;
+utf8_int32_t lexer_peekChar(Lexer* lex) {
+    utf8_int32_t c;
+    utf8codepoint(lex->pos, &c);
+    return c;
 }
 
-char lexer_peekNextChar(Lexer* lex) {
-    if (lexer_peekChar(lex) == '\0') return '\0'; /* To keep us from looking past the end of the string */
-      return *(lex->pos + 1);
+utf8_int32_t lexer_peekNextChar(Lexer* lex) {
+    if ((*lex->pos) == '\0') return '\0'; /* To keep us from looking past the end of the string */
+    utf8_int32_t c;
+    utf8codepoint(lex->pos+1, &c);
+    return c;
 }
 
-char lexer_nextChar(Lexer* lex) {
-    char c = lexer_peekChar(lex);
-    lex->pos++;
+utf8_int32_t lexer_nextChar(Lexer* lex) {
+    utf8_int32_t c;
+    lex->pos = (const char*)utf8codepoint(lex->pos, &c);
     lex->colno++;
     return c;
 }
@@ -67,22 +72,27 @@ void lexer_scan_comment(Lexer* lex) {
     lex->pos+=2;
     lex->colno+=2;
     while(1) {
-        char c = lexer_nextChar(lex);
-        if(c=='\0') {err("%i:%i Comment extends beyond EOF", lex->lineno, lex->colno);}
-        
+        utf8_int32_t c = lexer_peekChar(lex);
+        utf8_int32_t c2 = lexer_peekNextChar(lex);
+        if(c=='\0') {err("%s %i:%i Comment extends beyond EOF", lex->filename, lex->lineno, lex->colno);}
+        if((c == '*') && (c2 == '/')) {lexer_nextChar(lex); lexer_nextChar(lex); lex->start = lex->pos; break;}
+        if(c=='\n') {lexer_newline(lex);} else {
+            lexer_nextChar(lex);
+        }
     }
 }
 
 int lexer_next(Lexer* lex) {
-    char c;
+    utf8_int32_t c;
 loop:
     c = lexer_peekChar(lex);
 
     if(c=='\0') {return 0;}
     if((c==' ')||(c=='\t')||(c=='\v')||(c=='\f')||(c=='\r')) {lex->pos++; lex->start++; if(c!='\r'){lex->colno++;} goto loop;}
     if(c=='\n') {lexer_newline(lex); goto loop;}
+    if((c=='/') && (lexer_peekNextChar(lex)=='*')) {lexer_scan_comment(lex); goto loop;}
 
-    err("%i:%i Unreconized Token", lex->lineno, lex->colno);
+    err("%s %i:%i Unrecognized Token", lex->filename, lex->lineno, lex->colno);
 ret:
     return 1;
 }

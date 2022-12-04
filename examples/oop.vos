@@ -1,3 +1,4 @@
+/* Making classes in Vos is easy! 🦊 */
 class Foo {
     var x Int
     /* Variables CANNOT be initialized outside of init! (Unless they are static) */
@@ -9,7 +10,7 @@ class Foo {
 
 class Bar {
     private value Foo
-    func init(a Int) {
+    func init(a Foo) {
         value = a
     }
 }

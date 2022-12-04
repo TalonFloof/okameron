@@ -5,7 +5,6 @@
 #include <stddef.h>
 
 typedef enum {
-    Comment,
     String,
     Integer,
     Float,
