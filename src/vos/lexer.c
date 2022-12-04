@@ -107,6 +107,12 @@ void lexer_scan_identifier(Lexer* lex) {
     lex->pos = utf8rcodepoint(lex->pos,&c);
     lex->colno--;
 
+    if((((uintptr_t)(lex->pos))-((uintptr_t)(lex->start)) == 3)) {
+        if(utf8ncmp(lex->start,"vos",3) == 0) {
+            err("%s %i:%i Identifier \"vos\" is not fluffy enough. Did you mean \"🦊\"?", lex->filename, lex->lineno, lex->colno); /* Haha, da funny mesg */
+        }
+    }
+
     lexer_add_token(lex, lexer_keyword(lex->start,((uintptr_t)(lex->pos))-((uintptr_t)(lex->start))));
 }
 
@@ -202,6 +208,7 @@ void lexer_scan_operator(Lexer* lex) {
             err("%s %i:%i Unrecognized Operator", lex->filename, lex->lineno, lex->colno);
         }
     }
+    lexer_add_token(lex, token);
 }
 
 void lexer_scan_number(Lexer* lex) {
@@ -219,6 +226,22 @@ void lexer_scan_number(Lexer* lex) {
     lexer_add_token(lex, type);
 }
 
+void lexer_scan_string(Lexer* lex) {
+    lexer_nextChar(lex);
+    utf8_int32_t c = lexer_nextChar(lex);
+    while(1) {
+        if(c == '\0') {err("%s %i:%i EOF while lexing String literal", lex->filename, lex->lineno, lex->colno);}
+        if(c == '\n') {err("%s %i:%i EOL while lexing String literal", lex->filename, lex->lineno, lex->colno);}
+        if(c == '\\') {
+            lexer_nextChar(lex);
+            if(lexer_peekChar(lex) == '\0') {err("%s %i:%i EOF while lexing String literal", lex->filename, lex->lineno, lex->colno);}
+        }
+        if(c == '"') {break;}
+        c = lexer_nextChar(lex);
+    }
+    lexer_add_token(lex, TOKEN_STRING);
+}
+
 int lexer_next(Lexer* lex) {
     utf8_int32_t c;
 loop:
@@ -231,6 +254,7 @@ loop:
     if((c=='_')||isalpha(c)||(c>=0xc0)) {lexer_scan_identifier(lex); goto ret;}
     if(is_operator(c)) {lexer_scan_operator(lex); goto ret;}
     if(isdigit(c)) {lexer_scan_number(lex); goto ret;}
+    if(c=='"') {lexer_scan_string(lex); goto ret;}
 
     err("%s %i:%i Unrecognized Token", lex->filename, lex->lineno, lex->colno);
 ret:

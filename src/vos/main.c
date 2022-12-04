@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
         gettimeofday(&stop, NULL);
         double start_timestamp = (double)((start.tv_sec*1000)+(start.tv_usec/1000));
         double stop_timestamp = (double)((stop.tv_sec*1000)+(stop.tv_usec/1000));
-        fprintf(stderr, "\x1b[1mSuccessfully compiled in %.3fs\x1b[0m", (stop_timestamp-start_timestamp)/1000.0);
+        fprintf(stderr, "\r\x1b[2K\x1b[1mSuccessfully compiled in %.3fs\x1b[0m", (stop_timestamp-start_timestamp)/1000.0);
     } else {
         fprintf(stderr, "Usage: vos <file.vos>\n");
         return 0;
