@@ -1,4 +1,3 @@
-/* Making classes in Vos is easy! 🦊 */
 class Foo {
     var x Int
     /* Variables CANNOT be initialized outside of init! (Unless they are static) */
@@ -26,21 +25,21 @@ class Italy {
 }
 
 /* Single Inheritance is also supported */
-class Bird {
+class 🐦 { /* Yes, you can use UTF-8 symbols and text as identifiers! */
     func talk() {
         System.println("Tweet!")
     }
 }
 
-class SnowyOwl : Bird {
+class 🦉 : 🐦 {
     func talk() {
         System.println("Hoot!")
     }
 }
 
 func main() {
-    bird := Bird()
+    bird := 🐦()
     bird.talk()
-    snowyOwl := SnowyOwl()
-    snowyOwl.talk()
+    owl := 🦉()
+    owl.talk()
 }

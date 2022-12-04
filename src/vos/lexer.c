@@ -4,47 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <utf8.h>
+#include <ctype.h>
 
 #define TOKEN_ALLOCATION_AMOUNT 128 /* Lowering this number will impact performance, but will improve memory usage. */
-
-/*static const char* PatternComment = "\\/\\*.*?\\*\\/";
-static const char* PatternString = "[\"]([^\"\\\\\\n]|\\\\.|\\\\\\n)*[\"]";
-static const char* PatternIntBase10 = "[\\-0-9]+";
-static const char* PatternIntBase2 = "0b[0-1]+";
-static const char* PatternIntBase16 = "0x[0-9a-fA-F]+";
-static const char* PatternIntFloat = "[0-9]+\\.[0-9]+";
-static const char* PatternIdentifier = "[@_A-Za-z][\\._A-Za-z0-9]*";*/
-
-/*
-Keywords, sorted from smallest to largest:
-
-if
-var
-for
-func
-enum
-else
-true
-class
-match
-break
-false
-super
-import
-static
-elseif
-private
-continue
-*/
-
-void lexer_add_token(Lexer* lex, TokenType type) {
-    if(lex->tokenVecLength+1 > lex->tokenVecCapacity) {
-        lex->tokenVector = (Token*)realloc(lex->tokenVector,(lex->tokenVecCapacity+TOKEN_ALLOCATION_AMOUNT)*sizeof(Token));
-        lex->tokenVecCapacity += TOKEN_ALLOCATION_AMOUNT;
-    }
-    lex->tokenVector[lex->tokenVecLength++] = (Token){.type = type, .start = lex->start, .length = ((uintptr_t)(lex->pos))-((uintptr_t)(lex->start))};
-    lex->start = lex->pos+1;
-}
 
 utf8_int32_t lexer_peekChar(Lexer* lex) {
     utf8_int32_t c;
@@ -68,6 +30,15 @@ utf8_int32_t lexer_nextChar(Lexer* lex) {
 
 void lexer_newline(Lexer* lex) {lex->pos++; lex->start++; lex->colno = 0; lex->lineno++;}
 
+void lexer_add_token(Lexer* lex, TokenType type) {
+    if(lex->tokenVecLength+1 > lex->tokenVecCapacity) {
+        lex->tokenVector = (Token*)realloc(lex->tokenVector,(lex->tokenVecCapacity+TOKEN_ALLOCATION_AMOUNT)*sizeof(Token));
+        lex->tokenVecCapacity += TOKEN_ALLOCATION_AMOUNT;
+    }
+    lex->tokenVector[lex->tokenVecLength++] = (Token){.type = type, .start = lex->start, .length = ((uintptr_t)(lex->pos))-((uintptr_t)(lex->start))};
+    lex->start = lex->pos;
+}
+
 void lexer_scan_comment(Lexer* lex) {
     lex->pos+=2;
     lex->colno+=2;
@@ -82,6 +53,172 @@ void lexer_scan_comment(Lexer* lex) {
     }
 }
 
+TokenType lexer_keyword(const char* base, int len) {
+    switch(len) {
+        case 2: {
+            if(utf8ncmp(base,"if",len) == 0) return TOKEN_KEYWORD_IF;
+            return TOKEN_IDENTIFIER;
+        }
+        case 3: {
+            if(utf8ncmp(base,"var",len) == 0) return TOKEN_KEYWORD_VAR;
+            if(utf8ncmp(base,"for",len) == 0) return TOKEN_KEYWORD_FOR;
+            return TOKEN_IDENTIFIER;
+        }
+        case 4: {
+            if(utf8ncmp(base,"func",len) == 0) return TOKEN_KEYWORD_FUNC;
+            if(utf8ncmp(base,"enum",len) == 0) return TOKEN_KEYWORD_ENUM;
+            if(utf8ncmp(base,"else",len) == 0) return TOKEN_KEYWORD_ELSE;
+            if(utf8ncmp(base,"true",len) == 0) return TOKEN_KEYWORD_TRUE;
+            return TOKEN_IDENTIFIER;
+        }
+        case 5: {
+            if(utf8ncmp(base,"class",len) == 0) return TOKEN_KEYWORD_CLASS;
+            if(utf8ncmp(base,"match",len) == 0) return TOKEN_KEYWORD_MATCH;
+            if(utf8ncmp(base,"break",len) == 0) return TOKEN_KEYWORD_BREAK;
+            if(utf8ncmp(base,"false",len) == 0) return TOKEN_KEYWORD_FALSE;
+            if(utf8ncmp(base,"super",len) == 0) return TOKEN_KEYWORD_SUPER;
+            return TOKEN_IDENTIFIER;
+        }
+        case 6: {
+            if(utf8ncmp(base,"import",len) == 0) return TOKEN_KEYWORD_IMPORT;
+            if(utf8ncmp(base,"static",len) == 0) return TOKEN_KEYWORD_STATIC;
+            if(utf8ncmp(base,"elseif",len) == 0) return TOKEN_KEYWORD_ELSEIF;
+            return TOKEN_IDENTIFIER;
+        }
+        case 7: {
+            if(utf8ncmp(base,"private",len) == 0) return TOKEN_KEYWORD_PRIVATE;
+            return TOKEN_IDENTIFIER;
+        }
+        case 8: {
+            if(utf8ncmp(base,"continue",len) == 0) return TOKEN_KEYWORD_CONTINUE;
+            return TOKEN_IDENTIFIER;
+        }
+        default: {
+            return TOKEN_IDENTIFIER;
+        }
+    }
+}
+
+void lexer_scan_identifier(Lexer* lex) {
+    utf8_int32_t c = lexer_peekChar(lex);
+    while((c=='_')||(c=='.')||isalpha(c)||isdigit(c)||(c>=0xc0)) {
+        c = lexer_nextChar(lex);
+    }
+    lex->pos = utf8rcodepoint(lex->pos,&c);
+    lex->colno--;
+
+    lexer_add_token(lex, lexer_keyword(lex->start,((uintptr_t)(lex->pos))-((uintptr_t)(lex->start))));
+}
+
+static int is_operator (utf8_int32_t c) {
+    return ((c == '+') || (c == '-') || (c == '*') || (c == '/') ||
+            (c == '<') || (c == '>') || (c == '!') || (c == '=') ||
+            (c == '|') || (c == '&') || (c == '^') || (c == '%') ||
+            (c == '~') || (c == ':') || (c == ',') || 
+            (c == '{') || (c == '}') || (c == '[') || (c == ']') || 
+            (c == '(') || (c == ')') );
+}
+
+void lexer_scan_operator(Lexer* lex) {
+    utf8_int32_t c = lexer_nextChar(lex);
+    utf8_int32_t c2 = lexer_peekChar(lex);
+
+    TokenType token = (TokenType)0;
+
+    switch(c) {
+        case '+':
+            token = TOKEN_OPERATOR_PLUS;
+            break;
+        case '-':
+            token = TOKEN_OPERATOR_MINUS;
+            break;
+        case '*':
+            token = TOKEN_OPERATOR_MULTIPLY;
+            break;
+        case '/':
+            token = TOKEN_OPERATOR_DIVIDE;
+            break;
+        case '%':
+            token = TOKEN_OPERATOR_MODULO;
+            break;
+        case '~':
+            token = TOKEN_OPERATOR_UNARY_NOT;
+            break;
+        case '^':
+            token = TOKEN_OPERATOR_UNARY_XOR;
+            break;
+        case '|':
+            if(c2 == '|') {lexer_nextChar(lex); token = TOKEN_OPERATOR_BOOL_OR;}
+            else token = TOKEN_OPERATOR_UNARY_OR;
+            break;
+        case '&':
+            if(c2 == '&') {lexer_nextChar(lex); token = TOKEN_OPERATOR_BOOL_OR;}
+            else token = TOKEN_OPERATOR_UNARY_OR;
+            break;
+        case '=':
+            if(c2 == '=') {lexer_nextChar(lex); token = TOKEN_OPERATOR_EQUAL;}
+            else token = TOKEN_OPERATOR_ASSIGN;
+            break;
+        case '!':
+            if(c2 == '=') {lexer_nextChar(lex); token = TOKEN_OPERATOR_NOTEQUAL;}
+            else token = TOKEN_OPERATOR_BOOL_NOT;
+            break;
+        case '<':
+            if(c2 == '=') {lexer_nextChar(lex); token = TOKEN_OPERATOR_LESSEQUAL;}
+            else if(c2 == '<') {lexer_nextChar(lex); token = TOKEN_OPERATOR_LSHIFT;}
+            else token = TOKEN_OPERATOR_LESS;
+            break;
+        case '>':
+            if(c2 == '=') {lexer_nextChar(lex); token = TOKEN_OPERATOR_MOREEQUAL;}
+            else if(c2 == '>') {lexer_nextChar(lex); token = TOKEN_OPERATOR_RSHIFT;}
+            else token = TOKEN_OPERATOR_MORE;
+            break;
+        case ':':
+            if(c2 == '=') {lexer_nextChar(lex); token = TOKEN_OPERATOR_IMPLY_ASSIGN;}
+            else token = TOKEN_OPERATOR_COLON;
+            break;
+        case ',':
+            token = TOKEN_OPERATOR_COMMA;
+            break;
+        case '(':
+            token = TOKEN_OPERATOR_LPAREN;
+            break;
+        case ')':
+            token = TOKEN_OPERATOR_RPAREN;
+            break;
+        case '[':
+            token = TOKEN_OPERATOR_LBRACKET;
+            break;
+        case ']':
+            token = TOKEN_OPERATOR_RBRACKET;
+            break;
+        case '{':
+            token = TOKEN_OPERATOR_LBRACE;
+            break;
+        case '}':
+            token = TOKEN_OPERATOR_RBRACE;
+            break;
+        default: {
+            err("%s %i:%i Unrecognized Operator", lex->filename, lex->lineno, lex->colno);
+        }
+    }
+}
+
+void lexer_scan_number(Lexer* lex) {
+    TokenType type = TOKEN_INTEGER;
+    utf8_int32_t c = lexer_peekChar(lex);
+    while((c=='.')||isdigit(c)) {
+        c = lexer_nextChar(lex);
+        if(c == '.') {
+            type = TOKEN_FLOAT;
+        }
+    }
+    lex->pos = utf8rcodepoint(lex->pos,&c);
+    lex->colno--;
+
+    lexer_add_token(lex, type);
+}
+
 int lexer_next(Lexer* lex) {
     utf8_int32_t c;
 loop:
@@ -91,6 +228,9 @@ loop:
     if((c==' ')||(c=='\t')||(c=='\v')||(c=='\f')||(c=='\r')) {lex->pos++; lex->start++; if(c!='\r'){lex->colno++;} goto loop;}
     if(c=='\n') {lexer_newline(lex); goto loop;}
     if((c=='/') && (lexer_peekNextChar(lex)=='*')) {lexer_scan_comment(lex); goto loop;}
+    if((c=='_')||isalpha(c)||(c>=0xc0)) {lexer_scan_identifier(lex); goto ret;}
+    if(is_operator(c)) {lexer_scan_operator(lex); goto ret;}
+    if(isdigit(c)) {lexer_scan_number(lex); goto ret;}
 
     err("%s %i:%i Unrecognized Token", lex->filename, lex->lineno, lex->colno);
 ret:
@@ -98,42 +238,12 @@ ret:
 }
 
 Lexer lexer_parse(const char* filename, const char* buffer) {
-    /*results_t res = lexer(buffer,9+18,*/ /* Get ready for this long list... */
-    /*    "Newline", "\n",
-        "Comment", "\\/\\*.*?\\*\\/",
-        "String", "[\"]([^\"\\\\\\n]|\\\\.|\\\\\\n)*[\"]",
-        "Integer", "[\\-0-9]+",
-        "Integer", "0x[0-9a-fA-F]+",
-        "Integer", "0b[0-1]+",
-        "Float", "[0-9]+\\.[0-9]+",
-        "Identifier", "[@_A-Za-z][\\._A-Za-z0-9]*",
-        "Symbol", "(\\+|-|\\*|\\/|%|~|\\^|\\(|\\)|\\[|\\]|\\{|\\}|\\,){1}|(=|!|<|>|:|&|\\|){1,2}",*/ /*9*/
-/*
-        "KeywordFunc", "func",
-        "KeywordClass", "class",
-        "KeywordEnum", "enum",
-        "KeywordImport", "import",
-        "KeywordVar", "var",
-        "KeywordPrivate", "private",
-        "KeywordStatic", "static",
-        "KeywordIf", "if",
-        "KeywordElseif", "elseif",
-        "KeywordElse", "else",
-        "KeywordMatch", "match",
-        "KeywordFor", "for",
-        "KeywordBreak", "break",
-        "KeywordContinue", "continue",
-        "KeywordReturn", "return",
-        "KeywordTrue", "true",
-        "KeywordFalse", "false",
-        "KeywordSuper", "super"*/ /*18*/
-    /*);*/
     Lexer lex;
     lex.filename = filename;
     lex.buffer = buffer;
     lex.start = buffer;
     lex.pos = buffer;
-    lex.length = strlen(buffer);
+    lex.length = utf8len(buffer);
     lex.tokenVector = (Token*)malloc(1);
     lex.tokenVecCapacity = 0;
     lex.tokenVecLength = 0;
