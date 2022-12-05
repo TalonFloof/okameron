@@ -31,7 +31,7 @@ typedef struct {
     uint64_t length;
 } VosCompilerOutput;
 
-#define PRINT(d,...) ((VosDelegate*)d)->printf(__VA_ARGS__)
+#define PRINT(d,...) if(((uintptr_t)((VosDelegate*)d)->printf) != 0) ((VosDelegate*)d)->printf(__VA_ARGS__)
 
 VosCompiler* vos_create_compiler(VosDelegate delegate);
 VosCompilerOutput vos_compiler_run(VosCompiler* compiler, const char* filename, const char* buffer);

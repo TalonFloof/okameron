@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "../../shared/headers/vos_array.h"
+#include "lexer.h"
 
 typedef enum {
     NULL_NODE = 0, /* Self-explanitory */
@@ -49,6 +50,10 @@ typedef struct { /* Must be void pointers to prevent cyclic dependency issues */
     char* buffer;
     uint32_t length;
     VoidPtrArray lexers;
+
+    Token previous;
+    Token current;
+    Token next;
 } Parser;
 
 Parser* parser_new(void* compiler);

@@ -25,11 +25,13 @@ utf8_int32_t lexer_nextChar(Lexer* lex) {
     return c;
 }
 
-void lexer_newline(Lexer* lex) {lex->pos++; lex->start++; lex->colno = 0; lex->lineno++;}
+void lexer_newline(Lexer* lex) {lex->pos++; lex->start++; lex->colno = 0; lex->lineno++; lex->start_colno = 0; lex->start_lineno++;}
 
 Token lexer_add_token(Lexer* lex, TokenType type) {
-    Token tok = (Token){.type = type, .start = lex->start, .length = ((uintptr_t)(lex->pos))-((uintptr_t)(lex->start))};
+    Token tok = (Token){.type = type, .start = lex->start, .length = ((uintptr_t)(lex->pos))-((uintptr_t)(lex->start)), .lineno = lex->start_lineno, .colno = lex->start_colno};
     lex->start = lex->pos;
+    lex->start_lineno = lex->lineno;
+    lex->start_colno = lex->colno;
     return tok;
 }
 
@@ -63,10 +65,12 @@ TokenType lexer_keyword(const char* base, int len) {
             if(utf8ncmp(base,"enum",len) == 0) return TOKEN_KEYWORD_ENUM;
             if(utf8ncmp(base,"else",len) == 0) return TOKEN_KEYWORD_ELSE;
             if(utf8ncmp(base,"true",len) == 0) return TOKEN_KEYWORD_TRUE;
+            if(utf8ncmp(base,"null",len) == 0) return TOKEN_KEYWORD_NULL;
             return TOKEN_IDENTIFIER;
         }
         case 5: {
             if(utf8ncmp(base,"class",len) == 0) return TOKEN_KEYWORD_CLASS;
+            if(utf8ncmp(base,"while",len) == 0) return TOKEN_KEYWORD_WHILE;
             if(utf8ncmp(base,"match",len) == 0) return TOKEN_KEYWORD_MATCH;
             if(utf8ncmp(base,"break",len) == 0) return TOKEN_KEYWORD_BREAK;
             if(utf8ncmp(base,"false",len) == 0) return TOKEN_KEYWORD_FALSE;
@@ -75,7 +79,9 @@ TokenType lexer_keyword(const char* base, int len) {
         }
         case 6: {
             if(utf8ncmp(base,"import",len) == 0) return TOKEN_KEYWORD_IMPORT;
-            if(utf8ncmp(base,"static",len) == 0) return TOKEN_KEYWORD_STATIC;
+            if(utf8ncmp(base,"static private",14) == 0) return TOKEN_KEYWORD_STATIC_PRIVATE;
+            if(utf8ncmp(base,"static func",11) == 0) return TOKEN_KEYWORD_STATIC_FUNC;
+            if(utf8ncmp(base,"static var",10) == 0) return TOKEN_KEYWORD_STATIC_VAR;
             if(utf8ncmp(base,"elseif",len) == 0) return TOKEN_KEYWORD_ELSEIF;
             return TOKEN_IDENTIFIER;
         }
@@ -106,7 +112,16 @@ Token lexer_scan_identifier(Lexer* lex) {
             err("%s %i:%i Identifier \"vos\" is not fluffy enough. Did you mean \"🦊\"?", lex->filename, lex->lineno, lex->colno); /* Haha, da funny mesg */
         }
     }
-    return lexer_add_token(lex, lexer_keyword(lex->start,((uintptr_t)(lex->pos))-((uintptr_t)(lex->start))));
+    TokenType type = lexer_keyword(lex->start,((uintptr_t)(lex->pos))-((uintptr_t)(lex->start)));
+    int i;
+    if(type == TOKEN_KEYWORD_STATIC_PRIVATE) {
+        for(i = 0; i < 8; i++) {lexer_nextChar(lex);}
+    } else if(type == TOKEN_KEYWORD_STATIC_FUNC) {
+        for(i = 0; i < 5; i++) {lexer_nextChar(lex);}
+    } else if(type == TOKEN_KEYWORD_STATIC_VAR) {
+        for(i = 0; i < 4; i++) {lexer_nextChar(lex);}
+    }
+    return lexer_add_token(lex, type);
 }
 
 static int is_operator (utf8_int32_t c) {
@@ -236,17 +251,18 @@ Token lexer_scan_string(Lexer* lex) {
 }
 
 Token lexer_next(Lexer* lex) {
+    if(lex->atEOF) {return lexer_add_token(lex, TOKEN_NULL);}
     utf8_int32_t c;
 loop:
     c = lexer_peekChar(lex);
 
-    if(c=='\0') {return lexer_add_token(lex, TOKEN_NULL);}
-    if((c==' ')||(c=='\t')||(c=='\v')||(c=='\f')||(c=='\r')) {lex->pos++; lex->start++; if(c!='\r'){lex->colno++;} goto loop;}
+    if(c=='\0') {lex->atEOF = 1; return lexer_add_token(lex, TOKEN_NULL);}
+    if((c==' ')||(c=='\t')||(c=='\v')||(c=='\f')||(c=='\r')) {lex->pos++; lex->start++; if(c!='\r'){lex->colno++;} lex->start_colno = lex->colno; goto loop;}
     if(c=='\n') {lexer_newline(lex); goto loop;}
     if((c=='/') && (lexer_peekNextChar(lex)=='*')) {lexer_scan_comment(lex); goto loop;}
     if((c=='_')||isalpha(c)||(c>=0xc0)) {return lexer_scan_identifier(lex);}
     if(is_operator(c)) {return lexer_scan_operator(lex);}
-    if(isdigit(c)) {return lexer_scan_number(lex);}
+    if(isdigit(c)||(c=='-'&&isdigit(lexer_peekNextChar(lex)))) {return lexer_scan_number(lex);}
     if(c=='"') {return lexer_scan_string(lex);}
 
     err("%s %i:%i Unrecognized Token", lex->filename, lex->lineno, lex->colno);
@@ -262,5 +278,8 @@ Lexer* lexer_new(void* delegate, const char* filename, const char* buffer) {
     lex->length = utf8len(buffer);
     lex->lineno = 1;
     lex->colno = 0;
+    lex->start_lineno = 1;
+    lex->start_colno = 0;
+    lex->atEOF = 0;
     return lex;
 }

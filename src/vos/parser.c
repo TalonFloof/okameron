@@ -13,21 +13,64 @@ Parser* parser_new(void* delegate) {
     return parser;
 }
 
+void parser_next_token(Parser* parser) {
+    Lexer* lex = array_last(parser->lexers);
+    Token token = lexer_next(lex);
+    parser->previous = parser->current;
+    parser->current = parser->next;
+    parser->next = token;
+}
+
+void parser_scan_function(Parser* parser, const char* filename) {
+    if(parser->current.type != TOKEN_IDENTIFIER || parser->next.type != TOKEN_OPERATOR_LPAREN) {
+        ACCESS_DELEGATE(parser->delegate)->error_handler("%s %i:%i Invalid Function Declaration", filename, parser->previous.lineno, parser->previous.colno);
+    }
+    /*while(1) {
+        
+    }*/
+}
+
+void parser_scan_class(Parser* parser, const char* filename) {
+    if(parser->current.type != TOKEN_IDENTIFIER || (parser->next.type != TOKEN_OPERATOR_LBRACE&&parser->next.type != TOKEN_OPERATOR_COLON)) {
+        ACCESS_DELEGATE(parser->delegate)->error_handler("%s %i:%i Invalid Class Declaration", filename, parser->previous.lineno, parser->previous.colno);
+    }
+}
+
 void parser_run(Parser* parser, const char* filename, const char* buffer) {
     if(((uintptr_t)filename) == 0) {
         filename = "[anonymous buffer]";
     }
+    parser->previous.type = TOKEN_NULL;
+    parser->previous.start = buffer;
+    parser->previous.length = 0;
+    parser->current.type = TOKEN_NULL;
+    parser->current.start = buffer;
+    parser->current.length = 0;
+    parser->next.type = TOKEN_NULL;
+    parser->next.start = buffer;
+    parser->next.length = 0;
     array_push(ACCESS_DELEGATE(parser->delegate), void*, parser->lexers, lexer_new(parser->delegate, filename, buffer));
-    Lexer* lex = array_last(parser->lexers);
-    Token token;
+    parser_next_token(parser); /* Go ahead and grab the next token. */
     while(1) {
-        token = lexer_next(lex);
-        PRINT(parser->delegate,"%04i | %.*s\n", token.type, token.length, token.start);
-        if(token.type == TOKEN_NULL) {
+        parser_next_token(parser);
+        if(parser->current.type == TOKEN_NULL) {
             break;
         }
+        PRINT(parser->delegate,"%04i | %.*s\n", parser->current.type, parser->current.length, parser->current.start);
+        switch(parser->previous.type) {
+            case TOKEN_KEYWORD_FUNC:
+                parser_scan_function(parser,filename);
+                break;
+            case TOKEN_KEYWORD_CLASS:
+                parser_scan_class(parser,filename);
+                break;
+            case TOKEN_KEYWORD_ENUM:
+                break;
+            default:
+                break;
+        }
     }
-    ACCESS_DELEGATE(parser->delegate)->free(lex);
+    ACCESS_DELEGATE(parser->delegate)->free(array_last(parser->lexers));
     array_pop(parser->lexers);
 }
 

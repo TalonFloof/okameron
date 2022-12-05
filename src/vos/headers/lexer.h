@@ -12,22 +12,26 @@ typedef enum {
     TOKEN_IDENTIFIER,
 
     TOKEN_KEYWORD_FUNC,
+    TOKEN_KEYWORD_STATIC_FUNC,
     TOKEN_KEYWORD_CLASS,
     TOKEN_KEYWORD_ENUM,
     TOKEN_KEYWORD_IMPORT,
     TOKEN_KEYWORD_VAR,
+    TOKEN_KEYWORD_STATIC_VAR,
     TOKEN_KEYWORD_PRIVATE,
-    TOKEN_KEYWORD_STATIC,
+    TOKEN_KEYWORD_STATIC_PRIVATE,
     TOKEN_KEYWORD_IF,
     TOKEN_KEYWORD_ELSEIF,
     TOKEN_KEYWORD_ELSE,
     TOKEN_KEYWORD_MATCH,
+    TOKEN_KEYWORD_WHILE,
     TOKEN_KEYWORD_FOR,
     TOKEN_KEYWORD_BREAK,
     TOKEN_KEYWORD_CONTINUE,
     TOKEN_KEYWORD_RETURN,
     TOKEN_KEYWORD_TRUE,
     TOKEN_KEYWORD_FALSE,
+    TOKEN_KEYWORD_NULL,
     TOKEN_KEYWORD_SUPER,
 
     TOKEN_OPERATOR_PLUS,
@@ -66,6 +70,8 @@ typedef struct {
 	TokenType type;
 	const char* start;
     int length;
+    uint32_t lineno;
+    uint32_t colno;
 } Token;
 
 typedef struct {
@@ -77,7 +83,10 @@ typedef struct {
     const char* pos;
     uint32_t lineno;
     uint32_t colno;
+    uint32_t start_lineno;
+    uint32_t start_colno;
     uint32_t length;
+    int atEOF;
 } Lexer;
 
 Lexer* lexer_new(void* delegate, const char* filename, const char* buffer);

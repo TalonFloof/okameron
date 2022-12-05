@@ -3,7 +3,7 @@ func main() {
     b := 0
     c := 1
     System.println(a+b+c)
-    for c < 92 {
+    while c < 92 {
         a = b
         b = c
         c = a + b

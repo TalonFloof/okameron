@@ -3,5 +3,6 @@
 #include <stdint.h>
 
 void* vos_memset(void* s, int c, uintptr_t sz);
+void* vos_memcpy(void* s, void* d, uintptr_t n);
 
 #endif
