@@ -83,6 +83,7 @@ TokenType lexer_keyword(const char* base, int len) {
             if(utf8ncmp(base,"static func",11) == 0) return TOKEN_KEYWORD_STATIC_FUNC;
             if(utf8ncmp(base,"static var",10) == 0) return TOKEN_KEYWORD_STATIC_VAR;
             if(utf8ncmp(base,"elseif",len) == 0) return TOKEN_KEYWORD_ELSEIF;
+            if(utf8ncmp(base,"return",len) == 0) return TOKEN_KEYWORD_RETURN;
             return TOKEN_IDENTIFIER;
         }
         case 7: {
