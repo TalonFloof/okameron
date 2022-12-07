@@ -6,56 +6,6 @@
 
 #define ACCESS_DELEGATE(d) ((VosDelegate*)d)
 
-Parser* parser_new(void* delegate) {
-    Parser* parser = ACCESS_DELEGATE(delegate)->alloc(sizeof(Parser));
-    parser->delegate = delegate;
-    array_init(parser->lexers);
-    return parser;
-}
-
-void parser_next_token(Parser* parser) {
-    Lexer* lex = array_last(parser->lexers);
-    Token token = lexer_next(lex);
-    parser->previous = parser->current;
-    parser->current = parser->next;
-    parser->next = token;
-}
-
-void parser_scan_block(Parser* parser, const char* filename) {
-    if(parser->current.type != TOKEN_OPERATOR_LBRACE) {
-        ACCESS_DELEGATE(parser->delegate)->error_handler("%s %i:%i Code block is Invalid", filename, parser->current.lineno, parser->current.colno);
-    }
-    while(1) {
-        
-    }
-}
-
-void parser_scan_function(Parser* parser, const char* filename) {
-    if(parser->current.type != TOKEN_IDENTIFIER || parser->next.type != TOKEN_OPERATOR_LPAREN) {
-        ACCESS_DELEGATE(parser->delegate)->error_handler("%s %i:%i Invalid Function Declaration", filename, parser->previous.lineno, parser->previous.colno);
-    }
-    parser_next_token(parser);
-    while(1) {
-        parser_next_token(parser);
-        if(parser->current.type == TOKEN_OPERATOR_RPAREN) {
-            
-        }
-    }
-}
-
-void parser_scan_class(Parser* parser, const char* filename) {
-    if(parser->current.type != TOKEN_IDENTIFIER || (parser->next.type != TOKEN_OPERATOR_LBRACE && parser->next.type != TOKEN_OPERATOR_COLON)) {
-        ACCESS_DELEGATE(parser->delegate)->error_handler("%s %i:%i Invalid Class Declaration", filename, parser->previous.lineno, parser->previous.colno);
-    }
-}
-
-void parser_scan_variable(Parser* parser, const char* filename) {
-    if(parser->current.type != TOKEN_IDENTIFIER || parser->next.type != TOKEN_IDENTIFIER) {
-        ACCESS_DELEGATE(parser->delegate)->error_handler("%s %i:%i Invalid Variable Declaration", filename, parser->previous.lineno, parser->previous.colno);
-    }
-    parser_next_token(parser);
-}
-
 static const char* keywordNames[] = {
     "TOKEN_NULL",
     "TOKEN_STRING",
@@ -118,6 +68,57 @@ static const char* keywordNames[] = {
     "TOKEN_OPERATOR_RBRACE",
 };
 
+Parser* parser_new(void* delegate) {
+    Parser* parser = ACCESS_DELEGATE(delegate)->alloc(sizeof(Parser));
+    parser->delegate = delegate;
+    array_init(parser->lexers);
+    return parser;
+}
+
+void parser_next_token(Parser* parser) {
+    Lexer* lex = array_last(parser->lexers);
+    Token token = lexer_next(lex);
+    parser->previous = parser->current;
+    parser->current = parser->next;
+    parser->next = token;
+    PRINT(parser->delegate,"% 32s | %.*s\n", keywordNames[(int)(token.type)], token.length, token.start);
+}
+
+void parser_scan_block(Parser* parser, const char* filename) {
+    if(parser->current.type != TOKEN_OPERATOR_LBRACE) {
+        ACCESS_DELEGATE(parser->delegate)->error_handler("%s %i:%i Code block is Invalid", filename, parser->current.lineno, parser->current.colno);
+    }
+    while(1) {
+        
+    }
+}
+
+void parser_scan_function(Parser* parser, const char* filename) {
+    if(parser->current.type != TOKEN_IDENTIFIER || parser->next.type != TOKEN_OPERATOR_LPAREN) {
+        ACCESS_DELEGATE(parser->delegate)->error_handler("%s %i:%i Invalid Function Declaration", filename, parser->previous.lineno, parser->previous.colno);
+    }
+    parser_next_token(parser);
+    while(1) {
+        parser_next_token(parser);
+        if(parser->current.type == TOKEN_OPERATOR_RPAREN) {
+            break;
+        }
+    }
+}
+
+void parser_scan_class(Parser* parser, const char* filename) {
+    if(parser->current.type != TOKEN_IDENTIFIER || (parser->next.type != TOKEN_OPERATOR_LBRACE && parser->next.type != TOKEN_OPERATOR_COLON)) {
+        ACCESS_DELEGATE(parser->delegate)->error_handler("%s %i:%i Invalid Class Declaration", filename, parser->previous.lineno, parser->previous.colno);
+    }
+}
+
+void parser_scan_variable(Parser* parser, const char* filename) {
+    if(parser->current.type != TOKEN_IDENTIFIER || parser->next.type != TOKEN_IDENTIFIER) {
+        ACCESS_DELEGATE(parser->delegate)->error_handler("%s %i:%i Invalid Variable Declaration", filename, parser->previous.lineno, parser->previous.colno);
+    }
+    parser_next_token(parser);
+}
+
 void parser_run(Parser* parser, const char* filename, const char* buffer) {
     if(((uintptr_t)filename) == 0) {
         filename = "[anonymous buffer]";
@@ -138,7 +139,6 @@ void parser_run(Parser* parser, const char* filename, const char* buffer) {
         if(parser->previous.type == TOKEN_NULL && parser->current.type == TOKEN_NULL && parser->next.type == TOKEN_NULL) {
             break;
         }
-        /*PRINT(parser->delegate,"% 32s | %.*s\n", keywordNames[(int)(parser->current.type)], parser->current.length, parser->current.start);*/
         switch(parser->previous.type) {
             case TOKEN_KEYWORD_STATIC_FUNC:
             case TOKEN_KEYWORD_FUNC:
@@ -147,18 +147,20 @@ void parser_run(Parser* parser, const char* filename, const char* buffer) {
             case TOKEN_KEYWORD_CLASS:
                 parser_scan_class(parser,filename);
                 break;
+            case TOKEN_KEYWORD_VAR:
+                parser_scan_variable(parser,filename);
+                break;
             case TOKEN_KEYWORD_STATIC_VAR:
             case TOKEN_KEYWORD_STATIC_PRIVATE:
-            case TOKEN_KEYWORD_VAR:
             case TOKEN_KEYWORD_PRIVATE:
-                parser_scan_variable(parser,filename);
+                ACCESS_DELEGATE(parser->delegate)->error_handler("%s %i:%i private, static var, and static private cannot be used outside of a class", filename, parser->previous.lineno, parser->previous.colno);
                 break;
             case TOKEN_KEYWORD_ENUM:
                 break;
             default:
                 switch(parser->current.type) {
                     case TOKEN_IDENTIFIER:
-                        ACCESS_DELEGATE(parser->delegate)->error_handler("%s %i:%i Isolated Identifier", filename, parser->previous.lineno, parser->previous.colno);
+                        /*ACCESS_DELEGATE(parser->delegate)->error_handler("%s %i:%i Isolated Identifier", filename, parser->previous.lineno, parser->previous.colno);*/
                         break;
                     default:
                         break;
