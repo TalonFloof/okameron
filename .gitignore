@@ -5,3 +5,7 @@
 /vos
 /.vscode/
 /.vscode/**
+
+# Added by cargo
+
+target/
