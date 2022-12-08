@@ -45,11 +45,21 @@ typedef struct {
     
 } ASTNode_Loop;
 
+typedef enum {
+    SCOPE_FILE = 0,
+    SCOPE_FUNCTION,
+    SCOPE_INNER_FUNCTION,
+    SCOPE_CLASS,
+} ScopeType;
+
+typedef Array(ScopeType) ScopeStack;
+
 typedef struct { /* Must be void pointers to prevent cyclic dependency issues */
     void* delegate;
     char* buffer;
     uint32_t length;
     VoidPtrArray lexers;
+    ScopeStack scopes;
 
     Token previous;
     Token current;

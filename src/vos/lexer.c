@@ -70,7 +70,6 @@ TokenType lexer_keyword(const char* base, int len) {
         }
         case 5: {
             if(utf8ncmp(base,"class",len) == 0) return TOKEN_KEYWORD_CLASS;
-            if(utf8ncmp(base,"while",len) == 0) return TOKEN_KEYWORD_WHILE;
             if(utf8ncmp(base,"match",len) == 0) return TOKEN_KEYWORD_MATCH;
             if(utf8ncmp(base,"break",len) == 0) return TOKEN_KEYWORD_BREAK;
             if(utf8ncmp(base,"false",len) == 0) return TOKEN_KEYWORD_FALSE;
