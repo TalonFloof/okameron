@@ -48,8 +48,14 @@ typedef struct {
 typedef enum {
     SCOPE_FILE = 0,
     SCOPE_FUNCTION,
-    SCOPE_INNER_FUNCTION,
     SCOPE_CLASS,
+    SCOPE_IF,
+    SCOPE_ELSEIF,
+    SCOPE_ELSE,
+    SCOPE_FOR,
+    SCOPE_MATCH,
+    SCOPE_MATCH_CASE,
+    
 } ScopeType;
 
 typedef Array(ScopeType) ScopeStack;

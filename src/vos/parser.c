@@ -125,6 +125,7 @@ void parser_scan_function(Parser* parser) {
             parser_error(parser, "Function arguments extends beyond EOF");
         }
     }
+    parser_push_scope(parser,SCOPE_FUNCTION);
 }
 
 void parser_scan_class(Parser* parser) {
@@ -141,6 +142,7 @@ void parser_scan_class(Parser* parser) {
     if(parser->current.type != TOKEN_OPERATOR_LBRACE) {
         parser_error(parser, "Expected \"{\" after class identifier(s)");
     }
+    parser_push_scope(parser,SCOPE_CLASS);
 }
 
 void parser_scan_variable(Parser* parser) {
@@ -173,13 +175,27 @@ void parser_run(Parser* parser, const char* filename, const char* buffer) {
             case TOKEN_KEYWORD_STATIC_VAR:
             case TOKEN_KEYWORD_STATIC_PRIVATE:
             case TOKEN_KEYWORD_PRIVATE:
-                parser_error(parser,"private, static var, and static private cannot be used outside of a class scope");
+                if(parser_get_scope_type(parser) != SCOPE_CLASS) {
+                    parser_error(parser,"private, static var, and static private cannot be used outside of a class scope");
+                }
+                parser_scan_variable(parser);
                 break;
             case TOKEN_KEYWORD_ENUM:
+                parser_push_scope(parser,SCOPE_FILE); /*Temporary*/
+                break;
+            case TOKEN_OPERATOR_RBRACE:
+                if(array_size(parser->scopes) == 0) {
+                    parser_error(parser,"Isolated \"}\"");
+                } else {
+                    parser_pop_scope(parser);
+                }
                 break;
             default:
                 break;
         }
+    }
+    if(array_size(parser->scopes) > 0) {
+        parser_error(parser,"One or more scope(s) extends beyond EOF");
     }
     ACCESS_DELEGATE(parser->delegate)->free(array_last(parser->lexers));
     array_pop(parser->lexers);
