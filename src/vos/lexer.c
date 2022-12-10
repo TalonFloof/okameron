@@ -25,8 +25,6 @@ utf8_int32_t lexer_nextChar(Lexer* lex) {
     return c;
 }
 
-void lexer_newline(Lexer* lex) {lex->pos++; lex->start++; lex->colno = 0; lex->lineno++; lex->start_colno = 0; lex->start_lineno++;}
-
 Token lexer_add_token(Lexer* lex, TokenType type) {
     Token tok = (Token){.type = type, .start = lex->start, .length = ((uintptr_t)(lex->pos))-((uintptr_t)(lex->start)), .lineno = lex->start_lineno, .colno = lex->start_colno};
     lex->start = lex->pos;
@@ -34,6 +32,8 @@ Token lexer_add_token(Lexer* lex, TokenType type) {
     lex->start_colno = lex->colno;
     return tok;
 }
+
+void lexer_newline(Lexer* lex) {lex->pos++; lex->start++; lex->colno = 0; lex->lineno++; lex->start_colno = 0; lex->start_lineno++;}
 
 void lexer_scan_comment(Lexer* lex) {
     lex->pos+=2;
@@ -78,9 +78,6 @@ TokenType lexer_keyword(const char* base, int len) {
         }
         case 6: {
             if(utf8ncmp(base,"import",len) == 0) return TOKEN_KEYWORD_IMPORT;
-            if(utf8ncmp(base,"static private",14) == 0) return TOKEN_KEYWORD_STATIC_PRIVATE;
-            if(utf8ncmp(base,"static func",11) == 0) return TOKEN_KEYWORD_STATIC_FUNC;
-            if(utf8ncmp(base,"static var",10) == 0) return TOKEN_KEYWORD_STATIC_VAR;
             if(utf8ncmp(base,"elseif",len) == 0) return TOKEN_KEYWORD_ELSEIF;
             if(utf8ncmp(base,"return",len) == 0) return TOKEN_KEYWORD_RETURN;
             return TOKEN_IDENTIFIER;
@@ -113,14 +110,6 @@ Token lexer_scan_identifier(Lexer* lex) {
         }
     }
     TokenType type = lexer_keyword(lex->start,((uintptr_t)(lex->pos))-((uintptr_t)(lex->start)));
-    int i;
-    if(type == TOKEN_KEYWORD_STATIC_PRIVATE) {
-        for(i = 0; i < 8; i++) {lexer_nextChar(lex);}
-    } else if(type == TOKEN_KEYWORD_STATIC_FUNC) {
-        for(i = 0; i < 5; i++) {lexer_nextChar(lex);}
-    } else if(type == TOKEN_KEYWORD_STATIC_VAR) {
-        for(i = 0; i < 4; i++) {lexer_nextChar(lex);}
-    }
     return lexer_add_token(lex, type);
 }
 

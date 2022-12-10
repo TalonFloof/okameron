@@ -6,22 +6,22 @@
 
 #define ACCESS_DELEGATE(d) ((VosDelegate*)d)
 
+typedef Array(Token) TokenList;
+
 static const char* keywordNames[] = {
     "TOKEN_NULL",
+    "TOKEN_NEWLINE",
     "TOKEN_STRING",
     "TOKEN_INTEGER",
     "TOKEN_FLOAT",
     "TOKEN_IDENTIFIER",
 
     "TOKEN_KEYWORD_FUNC",
-    "TOKEN_KEYWORD_STATIC_FUNC",
     "TOKEN_KEYWORD_CLASS",
     "TOKEN_KEYWORD_ENUM",
     "TOKEN_KEYWORD_IMPORT",
     "TOKEN_KEYWORD_VAR",
-    "TOKEN_KEYWORD_STATIC_VAR",
     "TOKEN_KEYWORD_PRIVATE",
-    "TOKEN_KEYWORD_STATIC_PRIVATE",
     "TOKEN_KEYWORD_IF",
     "TOKEN_KEYWORD_ELSEIF",
     "TOKEN_KEYWORD_ELSE",
@@ -70,6 +70,7 @@ static const char* keywordNames[] = {
 Parser* parser_new(void* delegate) {
     Parser* parser = ACCESS_DELEGATE(delegate)->alloc(sizeof(Parser));
     parser->delegate = delegate;
+    parser->fetch_on_next = 1;
     array_init(parser->lexers);
     array_init(parser->scopes);
     return parser;
@@ -146,7 +147,27 @@ void parser_scan_class(Parser* parser) {
 }
 
 void parser_scan_variable(Parser* parser) {
-    
+    if(parser_get_scope_type(parser) == SCOPE_FILE) {
+        parser_error(parser, "By intentional design, Vos doesn't allow global variables to be defined (A compiler flag will allow globals in the future)");
+    }
+}
+
+void parser_scan_expression(Parser* parser) {
+    TokenList tokens;
+    array_init(tokens);
+    array_push(ACCESS_DELEGATE(parser->delegate), Token, tokens, parser->current);
+    int runLoop = 1;
+    while(runLoop) {
+        parser_next_token(parser);
+        switch(parser->current.type) {
+            case 
+            default:
+                runLoop = 0;
+                break;
+        }
+    }
+    parser->fetch_on_next = 0;
+    array_destroy(ACCESS_DELEGATE(parser->delegate),tokens);
 }
 
 void parser_run(Parser* parser, const char* filename, const char* buffer) {
@@ -158,11 +179,10 @@ void parser_run(Parser* parser, const char* filename, const char* buffer) {
     parser->current.length = 0;
     array_push(ACCESS_DELEGATE(parser->delegate), void*, parser->lexers, lexer_new(parser->delegate, filename, buffer));
     while(1) {
-        parser_next_token(parser);
+        if(!parser->fetch_on_next) {parser->fetch_on_next = 1;} else {parser_next_token(parser);}
         if(parser->current.type == TOKEN_NULL)
             break;
         switch(parser->current.type) {
-            case TOKEN_KEYWORD_STATIC_FUNC:
             case TOKEN_KEYWORD_FUNC:
                 parser_scan_function(parser);
                 break;
@@ -172,11 +192,11 @@ void parser_run(Parser* parser, const char* filename, const char* buffer) {
             case TOKEN_KEYWORD_VAR:
                 parser_scan_variable(parser);
                 break;
-            case TOKEN_KEYWORD_STATIC_VAR:
-            case TOKEN_KEYWORD_STATIC_PRIVATE:
             case TOKEN_KEYWORD_PRIVATE:
-                if(parser_get_scope_type(parser) != SCOPE_CLASS) {
-                    parser_error(parser,"private, static var, and static private cannot be used outside of a class scope");
+                if(parser_get_scope_type(parser) == SCOPE_FILE) {
+                    parser_error(parser, "By intentional design, Vos doesn't allow global variables to be defined (A compiler flag will allow globals in the future)");
+                } else if(parser_get_scope_type(parser) != SCOPE_CLASS) {
+                    parser_error(parser,"Private variables cannot be defined outside of a class scope");
                 }
                 parser_scan_variable(parser);
                 break;
@@ -189,6 +209,9 @@ void parser_run(Parser* parser, const char* filename, const char* buffer) {
                 } else {
                     parser_pop_scope(parser);
                 }
+                break;
+            case TOKEN_IDENTIFIER:
+                parser_scan_expression(parser);
                 break;
             default:
                 break;

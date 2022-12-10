@@ -49,13 +49,13 @@ typedef enum {
     SCOPE_FILE = 0,
     SCOPE_FUNCTION,
     SCOPE_CLASS,
+    SCOPE_ENUM,
     SCOPE_IF,
     SCOPE_ELSEIF,
     SCOPE_ELSE,
     SCOPE_FOR,
     SCOPE_MATCH,
     SCOPE_MATCH_CASE,
-    
 } ScopeType;
 
 typedef Array(ScopeType) ScopeStack;
@@ -64,6 +64,7 @@ typedef struct { /* Must be void pointers to prevent cyclic dependency issues */
     void* delegate;
     char* buffer;
     uint32_t length;
+    int fetch_on_next;
     VoidPtrArray lexers;
     ScopeStack scopes;
 

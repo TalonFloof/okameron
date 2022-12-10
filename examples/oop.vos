@@ -14,16 +14,6 @@ class Bar {
     }
 }
 
-/* Static values are also supported */
-class Italy {
-    static var population Int = 60656000
-    static var area Int = 301340
-
-    static func density() Int {
-        return population/area
-    }
-}
-
 /* Single Inheritance is also supported */
 class 🐦 { /* Yes, you can use UTF-8 symbols and text as identifiers! */
     func talk() {
