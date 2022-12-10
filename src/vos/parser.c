@@ -10,7 +10,6 @@ typedef Array(Token) TokenList;
 
 static const char* keywordNames[] = {
     "TOKEN_NULL",
-    "TOKEN_NEWLINE",
     "TOKEN_STRING",
     "TOKEN_INTEGER",
     "TOKEN_FLOAT",
@@ -40,6 +39,7 @@ static const char* keywordNames[] = {
     "TOKEN_OPERATOR_MULTIPLY",
     "TOKEN_OPERATOR_DIVIDE",
     "TOKEN_OPERATOR_MODULO",
+    "TOKEN_OPERATOR_POWER",
     "TOKEN_OPERATOR_UNARY_NOT",
     "TOKEN_OPERATOR_UNARY_XOR",
     "TOKEN_OPERATOR_UNARY_OR",
@@ -152,21 +152,90 @@ void parser_scan_variable(Parser* parser) {
     }
 }
 
+/*
+    Precedence Table (Top Is Parsed First):
+        := =
+        ( )
+        func()
+        >> <<
+        **
+        * / %
+        + - | ~ ^ &
+        == != > < >= <=
+        && ||
+*/
+
 void parser_scan_expression(Parser* parser) {
     TokenList tokens;
     array_init(tokens);
     array_push(ACCESS_DELEGATE(parser->delegate), Token, tokens, parser->current);
     int runLoop = 1;
+    int allowIdentifiers = 0;
+    int prevIdentAllow = 0;
     while(runLoop) {
+        prevIdentAllow = allowIdentifiers;
         parser_next_token(parser);
+        if(allowIdentifiers) {allowIdentifiers = 0;}
         switch(parser->current.type) {
-            case 
+            case TOKEN_IDENTIFIER:
+                if(prevIdentAllow) {
+                    array_push(ACCESS_DELEGATE(parser->delegate), Token, tokens, parser->current);
+                } else {
+                    runLoop = 0;
+                }
+                break;
+            case TOKEN_INTEGER:
+            case TOKEN_FLOAT:
+            case TOKEN_STRING:
+            case TOKEN_KEYWORD_TRUE:
+            case TOKEN_KEYWORD_FALSE:
+                array_push(ACCESS_DELEGATE(parser->delegate), Token, tokens, parser->current);
+                break;
+            case TOKEN_OPERATOR_PLUS:
+            case TOKEN_OPERATOR_MINUS:
+            case TOKEN_OPERATOR_MULTIPLY:
+            case TOKEN_OPERATOR_DIVIDE:
+            case TOKEN_OPERATOR_MODULO:
+            case TOKEN_OPERATOR_POWER:
+            case TOKEN_OPERATOR_UNARY_NOT:
+            case TOKEN_OPERATOR_UNARY_XOR:
+            case TOKEN_OPERATOR_UNARY_OR:
+            case TOKEN_OPERATOR_UNARY_AND:
+            case TOKEN_OPERATOR_LSHIFT:
+            case TOKEN_OPERATOR_RSHIFT:
+            case TOKEN_OPERATOR_BOOL_NOT:
+            case TOKEN_OPERATOR_BOOL_OR:
+            case TOKEN_OPERATOR_BOOL_AND:
+            case TOKEN_OPERATOR_EQUAL:
+            case TOKEN_OPERATOR_NOTEQUAL:
+            case TOKEN_OPERATOR_LESS:
+            case TOKEN_OPERATOR_MORE:
+            case TOKEN_OPERATOR_LESSEQUAL:
+            case TOKEN_OPERATOR_MOREEQUAL:
+            case TOKEN_OPERATOR_ASSIGN:
+            case TOKEN_OPERATOR_IMPLY_ASSIGN:
+            case TOKEN_OPERATOR_COMMA:
+            case TOKEN_OPERATOR_LPAREN:
+                array_push(ACCESS_DELEGATE(parser->delegate), Token, tokens, parser->current);
+                allowIdentifiers = 1;
+                break;
+            case TOKEN_OPERATOR_RPAREN:
+                array_push(ACCESS_DELEGATE(parser->delegate), Token, tokens, parser->current);
+                break;
             default:
                 runLoop = 0;
                 break;
         }
     }
     parser->fetch_on_next = 0;
+    int i;
+    for(i=0;i < array_size(tokens);i++) {
+        Token token = array_get(tokens,i);
+        PRINT(parser->delegate,"%.*s ", token.length, token.start);
+    }
+    PRINT(parser->delegate,"\n");
+    /* Now it's time to actually try to figure out what the expression is doing */
+    
     array_destroy(ACCESS_DELEGATE(parser->delegate),tokens);
 }
 
@@ -201,7 +270,10 @@ void parser_run(Parser* parser, const char* filename, const char* buffer) {
                 parser_scan_variable(parser);
                 break;
             case TOKEN_KEYWORD_ENUM:
-                parser_push_scope(parser,SCOPE_FILE); /*Temporary*/
+                parser_push_scope(parser,SCOPE_ENUM); /*Temporary*/
+                break;
+            case TOKEN_KEYWORD_FOR:
+                parser_push_scope(parser,SCOPE_FOR); /*Temporary*/
                 break;
             case TOKEN_OPERATOR_RBRACE:
                 if(array_size(parser->scopes) == 0) {
@@ -211,6 +283,8 @@ void parser_run(Parser* parser, const char* filename, const char* buffer) {
                 }
                 break;
             case TOKEN_IDENTIFIER:
+            case TOKEN_INTEGER:
+            case TOKEN_FLOAT:
                 parser_scan_expression(parser);
                 break;
             default:

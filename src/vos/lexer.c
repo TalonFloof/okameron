@@ -136,7 +136,8 @@ Token lexer_scan_operator(Lexer* lex) {
             token = TOKEN_OPERATOR_MINUS;
             break;
         case '*':
-            token = TOKEN_OPERATOR_MULTIPLY;
+            if(c2 == '*') {lexer_nextChar(lex); token = TOKEN_OPERATOR_POWER;}
+            else token = TOKEN_OPERATOR_MULTIPLY;
             break;
         case '/':
             token = TOKEN_OPERATOR_DIVIDE;
