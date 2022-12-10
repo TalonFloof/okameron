@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
             char* data = read_file(argv[2]);
             VosDelegate delegate = (VosDelegate){.alloc = malloc, .realloc = realloc, .free = free, .error_handler = err, .printf = printf};
 
-            VosCompiler* compiler = vos_create_compiler(delegate);
+            VosCompiler* compiler = vos_create_compiler(delegate,NULL);
             vos_compiler_run(compiler,argv[2],data);
 
             gettimeofday(&stop, NULL);

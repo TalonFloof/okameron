@@ -92,7 +92,7 @@ void parser_push_scope(Parser* parser, ScopeType type) {
 }
 
 void parser_pop_scope(Parser* parser) {
-    array_pop(parser->scopes);
+    (void)array_pop(parser->scopes);
 }
 
 ScopeType parser_get_scope_type(Parser* parser) {
@@ -152,21 +152,113 @@ void parser_scan_variable(Parser* parser) {
     }
 }
 
-/*
-    Precedence Table (Top Is Parsed First):
-        := =
-        ( )
-        func()
-        >> <<
-        **
-        * / %
-        + - | ~ ^ &
-        == != > < >= <=
-        && ||
+/* 
+    Huge credit to https://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
+    for helping me figure out pratt expression parsing.
 */
 
+ASTNode* parser_scan_literal(Parser* parser) {
+    return (ASTNode*)0;
+}
+
+ASTNode* parser_scan_infix(Parser* parser) {
+    return (ASTNode*)0;
+}
+
+ASTNode* parser_scan_unary(Parser* parser) {
+    return (ASTNode*)0;
+}
+
+ASTNode* parser_scan_identifier(Parser* parser) {
+    return (ASTNode*)0;
+}
+
+typedef enum {
+    PREC_NONE = 0,
+    PREC_LOW,
+    PREC_ASSIGNMENT, /* := = */
+    PREC_LOGIC, /* && || */
+    PREC_COMPARISON, /* == != > < >= <= */
+    PREC_TERM, /* + - | ^ & */
+    PREC_FACTOR, /* * / % */
+    PREC_EXPONENT, /* ** */
+    PREC_UNARY, /* ~ ! */
+    PREC_SHIFT, /* >> << */
+    PREC_CALL, /* func() */
+} PrecedenceLevel;
+
+typedef ASTNode* (*ASTParseFunc)(Parser* parser);
+
+typedef struct {
+    ASTParseFunc prefix;
+    ASTParseFunc infix;
+    PrecedenceLevel precedence;
+    const char* name;
+} SyntacticRule;
+
+#define UNUSED                      { NULL, NULL, PREC_NONE, NULL }
+#define PREFIX(prec, fn)            { fn, NULL, prec, NULL }
+#define INFIX(prec, fn)             { NULL, fn, prec, NULL }
+#define INFIX_OPERATOR(prec, name)  { NULL, parser_scan_infix, prec, name }
+#define PREFIX_OPERATOR(prec, name) { parser_scan_unary, NULL, prec, name }
+#define OPERATOR(prec, name)        { parser_scan_unary, parser_scan_infix, prec, name }
+
+SyntacticRule syntacticRules[] = {
+    UNUSED,
+    PREFIX(PREC_LOW,parser_scan_literal),
+    PREFIX(PREC_LOW,parser_scan_literal),
+    PREFIX(PREC_LOW,parser_scan_literal),
+    PREFIX(PREC_LOW,parser_scan_identifier),
+
+    UNUSED,
+    UNUSED,
+    UNUSED,
+    UNUSED,
+    UNUSED,
+    UNUSED,
+    UNUSED,
+    UNUSED,
+    UNUSED,
+    UNUSED,
+    UNUSED,
+    UNUSED,
+    UNUSED,
+    UNUSED,
+    PREFIX(PREC_LOW,parser_scan_literal),
+    PREFIX(PREC_LOW,parser_scan_literal),
+    UNUSED,
+    UNUSED,
+
+    OPERATOR(PREC_TERM,"+"),
+    OPERATOR(PREC_TERM,"-"),
+    INFIX_OPERATOR(PREC_FACTOR,"*"),
+    INFIX_OPERATOR(PREC_FACTOR,"/"),
+    INFIX_OPERATOR(PREC_FACTOR,"%"),
+    INFIX_OPERATOR(PREC_EXPONENT,"**"),
+    PREFIX_OPERATOR(PREC_UNARY,"~"),
+    INFIX_OPERATOR(PREC_TERM,"^"),
+    INFIX_OPERATOR(PREC_TERM,"|"),
+    INFIX_OPERATOR(PREC_TERM,"&"),
+    INFIX_OPERATOR(PREC_SHIFT,"<<"),
+    INFIX_OPERATOR(PREC_SHIFT,">>"),
+    PREFIX_OPERATOR(PREC_UNARY,"!"),
+    INFIX_OPERATOR(PREC_LOGIC,"||"),
+    INFIX_OPERATOR(PREC_LOGIC,"&&"),
+    INFIX_OPERATOR(PREC_COMPARISON,"=="),
+    INFIX_OPERATOR(PREC_COMPARISON,"!="),
+    INFIX_OPERATOR(PREC_COMPARISON,"<"),
+    INFIX_OPERATOR(PREC_COMPARISON,">"),
+    INFIX_OPERATOR(PREC_COMPARISON,"<="),
+    INFIX_OPERATOR(PREC_COMPARISON,">="),
+    INFIX_OPERATOR(PREC_ASSIGNMENT,"="),
+    INFIX_OPERATOR(PREC_ASSIGNMENT,":="),
+    UNUSED,
+    UNUSED,
+    { parser_scan_call,  }
+};
+
 void parser_scan_expression(Parser* parser) {
-    TokenList tokens;
+    /*TokenList tokens;
     array_init(tokens);
     array_push(ACCESS_DELEGATE(parser->delegate), Token, tokens, parser->current);
     int runLoop = 1;
@@ -227,16 +319,23 @@ void parser_scan_expression(Parser* parser) {
                 break;
         }
     }
-    parser->fetch_on_next = 0;
-    int i;
-    for(i=0;i < array_size(tokens);i++) {
-        Token token = array_get(tokens,i);
-        PRINT(parser->delegate,"%.*s ", token.length, token.start);
-    }
-    PRINT(parser->delegate,"\n");
+    parser->fetch_on_next = 0;*/
     /* Now it's time to actually try to figure out what the expression is doing */
-    
-    array_destroy(ACCESS_DELEGATE(parser->delegate),tokens);
+    /*int precedence;
+    int index;*/
+    /* Evaluate Precedence Level 1 and beyond */
+    /*for(precedence=1;precedence < 9;precedence++) {
+        for(index=0;index < array_size(tokens);index++) {
+            Token token = array_get(tokens,index);
+            switch(precedence) {
+                case 1:
+                    
+                    break;
+            }
+        }
+    }
+    array_destroy(ACCESS_DELEGATE(parser->delegate),tokens);*/
+
 }
 
 void parser_run(Parser* parser, const char* filename, const char* buffer) {
@@ -295,7 +394,7 @@ void parser_run(Parser* parser, const char* filename, const char* buffer) {
         parser_error(parser,"One or more scope(s) extends beyond EOF");
     }
     ACCESS_DELEGATE(parser->delegate)->free(array_last(parser->lexers));
-    array_pop(parser->lexers);
+    (void)array_pop(parser->lexers);
 }
 
 void parser_free(Parser* parser) {

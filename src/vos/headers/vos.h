@@ -21,9 +21,12 @@ typedef struct {
     VosPrintFHandler printf;
 } VosDelegate;
 
+typedef void* (*VosTargetParse)(void* delegate, const char* bufferName, void* astTree);
+
 typedef struct {
     VosDelegate delegate;
     Parser* parser;
+    VosTargetParse target;
 } VosCompiler;
 
 typedef struct {
@@ -33,7 +36,7 @@ typedef struct {
 
 #define PRINT(d,...) if(((uintptr_t)((VosDelegate*)d)->printf) != 0) ((VosDelegate*)d)->printf(__VA_ARGS__)
 
-VosCompiler* vos_create_compiler(VosDelegate delegate);
+VosCompiler* vos_create_compiler(VosDelegate delegate, VosTargetParse target);
 VosCompilerOutput vos_compiler_run(VosCompiler* compiler, const char* filename, const char* buffer);
 void vos_compiler_free(VosCompiler* compiler);
 

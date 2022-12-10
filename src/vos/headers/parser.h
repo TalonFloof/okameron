@@ -22,7 +22,7 @@ typedef enum {
 
     KEYWORD_EXPR, 
     LITERAL_EXPR, /* A literal value, such as an integer, float, string, etc. */
-    UNARY_EXPR, /* Operation with one value. Ex: Not, And, Or, Xor, etc. */
+    UNARY_EXPR, /* Operation with one value. Ex: Not */
     BINARY_EXPR, /* Operation with two values. Ex: addition, subtract, multiplication, etc. */
     FUNCTION_EXPR, /* Function call */ 
 } ASTNodeType;

@@ -256,6 +256,7 @@ loop:
     if(c=='"') {return lexer_scan_string(lex);}
 
     err("%s %i:%i Unrecognized Token", lex->filename, lex->lineno, lex->colno);
+    return lexer_add_token(lex, TOKEN_NULL);
 }
 
 Lexer* lexer_new(void* delegate, const char* filename, const char* buffer) {
