@@ -4,7 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef enum {
+typedef enum
+{
     TOKEN_NULL = 0,
     TOKEN_STRING,
     TOKEN_INTEGER,
@@ -63,21 +64,23 @@ typedef enum {
     TOKEN_OPERATOR_RBRACE,
 } TokenType;
 
-typedef struct {
-	TokenType type;
-	const char* start;
+typedef struct
+{
+    TokenType type;
+    const char *start;
     int length;
     uint32_t lineno;
     uint32_t colno;
 } Token;
 
-typedef struct {
-    void* delegate;
+typedef struct
+{
+    void *delegate;
 
-    const char* filename;
-    const char* buffer;
-    const char* start;
-    const char* pos;
+    const char *filename;
+    const char *buffer;
+    const char *start;
+    const char *pos;
     uint32_t lineno;
     uint32_t colno;
     uint32_t start_lineno;
@@ -86,7 +89,7 @@ typedef struct {
     int atEOF;
 } Lexer;
 
-Lexer* lexer_new(void* delegate, const char* filename, const char* buffer);
-Token lexer_next(Lexer* lex);
+Lexer *lexer_new(void *delegate, const char *filename, const char *buffer);
+Token lexer_next(Lexer *lex);
 
 #endif
