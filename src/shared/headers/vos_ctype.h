@@ -9,7 +9,7 @@
 #define _S 0x20
 #define _X 0x40
 #define _SP 0x80
-#define _HT 0x100 
+#define _HT 0x100
 
 extern const unsigned short _ctype[];
 unsigned char __toupper(unsigned char c);
