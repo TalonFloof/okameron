@@ -1,4 +1,4 @@
-func lerpTest(a Float, b Float, c Float) Float {ret:=(b-a)*c+a return ret} /* Test 1*/
+func lerpTest(a Float, b Float, c Float) Float {ret:=(b-a)*c+a return ret} /* Test 1 */
 
 func main() {
     A := 0 /* Test 2 */

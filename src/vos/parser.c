@@ -140,6 +140,14 @@ void parser_scan_function(Parser *parser) {
       parser_error(parser, "Function arguments extends beyond EOF");
     }
   }
+  parser_next_token(parser);
+  if (parser->current.type == TOKEN_IDENTIFIER) {
+    parser_expect_token(parser, TOKEN_OPERATOR_LBRACE,
+                        "Expected \"{\" after function declaration");
+  } else {
+    parser_consume_token(parser, TOKEN_OPERATOR_LBRACE,
+                         "Expected \"{\" after function declaration");
+  }
   parser_push_scope(parser, SCOPE_FUNCTION);
 }
 
@@ -289,8 +297,13 @@ SyntacticRule syntacticRules[] = {
     UNUSED,
 };
 
-void parser_scan_precedence(Parser *parser, PrecedenceLevel precedence) {
-  parser_next_token(parser);
+void parser_scan_precedence(Parser *parser, PrecedenceLevel precedence,
+                            int fetch) {
+  PRINT(parser->delegate, "Parsing %i Begin! %s\n", precedence,
+        keywordNames[(int)(parser->current.type)]);
+  if (fetch) parser_next_token(parser);
+  PRINT(parser->delegate, "---- %s\n",
+        keywordNames[(int)(parser->previous.type)]);
   SyntacticFn prefix = syntacticRules[parser->previous.type].prefix;
   if (prefix == NULL) {
     parser_error(parser, "Expected expression");
@@ -299,6 +312,8 @@ void parser_scan_precedence(Parser *parser, PrecedenceLevel precedence) {
   prefix(parser, canAssign);
   while (precedence <= syntacticRules[parser->current.type].precedence) {
     parser_next_token(parser);
+    PRINT(parser->delegate, "---- %s\n",
+          keywordNames[(int)(parser->previous.type)]);
     SyntacticFn infix = syntacticRules[parser->previous.type].infix;
     if (infix == NULL) {
       parser_error(parser,
@@ -307,6 +322,7 @@ void parser_scan_precedence(Parser *parser, PrecedenceLevel precedence) {
     infix(parser, canAssign);
   }
   parser->fetch_on_next = 0;
+  PRINT(parser->delegate, "Parsing %i End!\n", precedence);
 }
 
 void parser_scan_literal(Parser *parser, int canAssign) {}
@@ -314,17 +330,18 @@ void parser_scan_literal(Parser *parser, int canAssign) {}
 void parser_scan_infix(Parser *parser, int canAssign) {
   parser_scan_precedence(
       parser,
-      (PrecedenceLevel)(syntacticRules[parser->previous.type].precedence + 1));
+      (PrecedenceLevel)(syntacticRules[parser->previous.type].precedence + 1),
+      1);
 }
 
 void parser_scan_unary(Parser *parser, int canAssign) {
-  parser_scan_precedence(parser, (PrecedenceLevel)(PREC_UNARY + 1));
+  parser_scan_precedence(parser, (PrecedenceLevel)(PREC_UNARY + 1), 0);
 }
 
 void parser_scan_identifier(Parser *parser, int canAssign) {}
 
 void parser_scan_paren(Parser *parser, int canAssign) {
-  parser_scan_precedence(parser, PREC_LOW);
+  parser_scan_precedence(parser, PREC_LOW, 1);
   parser_consume_token(parser, TOKEN_OPERATOR_RPAREN,
                        "Expected \")\" after expression grouping.");
 }
@@ -389,7 +406,8 @@ void parser_run(Parser *parser, const char *filename, const char *buffer) {
       case TOKEN_IDENTIFIER:
       case TOKEN_INTEGER:
       case TOKEN_FLOAT:
-        parser_scan_precedence(parser, PREC_LOW);
+
+        parser_scan_precedence(parser, PREC_LOW, 1);
         break;
       default:
         break;
