@@ -2,4 +2,3 @@
 *.bat eol=crlf
 
 **/*.vos linguist-language=Vos
-**/vos.json linguist-language=Vos

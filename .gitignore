@@ -1,11 +1,3 @@
-*.o
-*.a
-/bootstrap/
-/bootstrap/**
 /vos
 /.vscode/
 /.vscode/**
-
-# Added by cargo
-
-target/

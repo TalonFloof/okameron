@@ -1,2 +1,2 @@
 # VosLang
-A Small yet Powerful Programming Language written in ANSI C 
+A Stack-Based Functional Programming Language written in Lua for the Okami1041 Processor.
