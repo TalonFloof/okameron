@@ -1,6 +1,25 @@
 local args = {...}
 local arch = "okami1041"
 
+local nl = string.char(10) -- newline
+function serialize_list (tabl, indent)
+    indent = indent and (indent.."  ") or ""
+    local str = ''
+    str = str .. indent.."{"..nl
+    for key, value in pairs (tabl) do
+        local pr = (type(key)=="string") and ('["'..key..'"]=') or ""
+        if type (value) == "table" then
+            str = str..pr..serialize_list (value, indent)
+        elseif type (value) == "string" then
+            str = str..indent..pr..'"'..tostring(value)..'",'..nl
+        else
+            str = str..indent..pr..tostring(value)..','..nl
+        end
+    end
+    str = str .. indent.."},"..nl
+    return str
+end
+
 while #args > 0 and string.sub(args[1],1,1) == "-" do
     if string.sub(args[1],2,6) == "arch=" then
         arch = string.sub(args[1],7)
@@ -23,14 +42,10 @@ local infile = io.open(args[1],"rb")
 local code = infile:read("*a").."\n"
 infile:close()
 for i in code:gmatch("([^\n]*)\n") do
-
+    if i:sub(1,10) == ".include \"" then
+        local str = load("return "..i:sub(10),"=includeparse","t",{})()
+    end
 end
 local tokens = lexer(code)
---[[for i,j in ipairs(tokens) do
-    io.write("Token "..i..": ")
-    for key, val in pairs(j) do
-        io.write(key.."="..val.." ")
-    end
-    print()
-end]]
 local astNodes = parser(tokens)
+print(serialize_list(astNodes))

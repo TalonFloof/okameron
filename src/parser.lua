@@ -8,6 +8,14 @@ local function parse(tokens)
         return load("return "..str,"=parseimmediate","t",{})()
     end
     local function parserError(err)
+        for i,j in ipairs(tokens) do
+            io.write("Token "..i..": ")
+            for key, val in pairs(j) do
+                io.write(key.."="..val.." ")
+            end
+            print()
+        end
+        print(serialize_list(astNodes))
         io.stderr:write("\x1b[1;31m"..tokens[cursor].line..":"..tokens[cursor].col.." - "..err.."\x1b[0m\n")
         os.exit(2)
     end
@@ -27,13 +35,35 @@ local function parse(tokens)
             elseif tokens[cursor].type == "string" then
                 addLocalNode("pushString",parseImm(tokens[cursor].txt))
             elseif tokens[cursor].type == "identifier" then
-
+                addLocalNode("functionCall",tokens[cursor].txt)
+            elseif tokens[cursor].type == "autoKeyword" then
+                local varNames = {}
+                cursor = cursor + 1
+                while true do
+                    expectToken("identifier")
+                    table.insert(varNames,tokens[cursor].txt)
+                    if tokens[cursor+1].type == "comma" then
+                        cursor = cursor + 2
+                    else
+                        break
+                    end
+                end
+                addLocalNode("localVars",varNames)
+            elseif tokens[cursor].type == "loopKeyword" then
+                cursor = cursor + 1
+                local conditionNodes = parseScope("doKeyword")
+                cursor = cursor + 1
+                addLocalNode("loop",{condition=conditionNodes,nodes=parseScope("endKeyword")})
+            elseif tokens[cursor].type == "ifKeyword" then
+                cursor = cursor + 1
+                local conditionNodes = parseScope("doKeyword")
+                cursor = cursor + 1
+                addLocalNode("if",{condition=conditionNodes,nodes=parseScope("endKeyword")})
             else
                 parserError("Unknown inner scope Token - \""..tokens[cursor].type.."\"")
             end
             cursor = cursor + 1
         end
-        cursor = cursor + 1
         return nodes
     end
     while cursor < #tokens do
@@ -47,6 +77,7 @@ local function parse(tokens)
         elseif tokens[cursor].type == "fnKeyword" then
             cursor = cursor + 1
             expectToken("identifier")
+            local name = tokens[cursor].txt
             cursor = cursor + 1
             local curPara = "in"
             local para = {["in"]={},out={}}
@@ -60,11 +91,13 @@ local function parse(tokens)
                     end
                 end
             end
-            parseScope("endKeyword")
+            addNode("function",{name=name,params=para,nodes=parseScope("endKeyword")})
+            cursor = cursor + 1
         else
             parserError("Unknown token \""..tokens[cursor].type.."\"")
         end
     end
+    return astNodes
 end
 
 return parse
