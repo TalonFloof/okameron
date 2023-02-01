@@ -79,8 +79,6 @@ return function(code)
                 addToken("doKeyword")
             elseif str == "loop" then
                 addToken("loopKeyword")
-            elseif str == "break" then
-                addToken("breakKeyword")
             elseif str == ".include_asm" then
                 addToken("includeASM")
             elseif str == "auto" then

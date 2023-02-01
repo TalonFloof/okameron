@@ -49,3 +49,5 @@ end
 local tokens = lexer(code)
 local astNodes = parser(tokens)
 print(serialize_list(astNodes))
+local finalASM = codegen(astNodes)
+print(finalASM)

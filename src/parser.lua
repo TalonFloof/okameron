@@ -55,10 +55,31 @@ local function parse(tokens)
                 cursor = cursor + 1
                 addLocalNode("loop",{condition=conditionNodes,nodes=parseScope("endKeyword")})
             elseif tokens[cursor].type == "ifKeyword" then
+                local ifs = {}
                 cursor = cursor + 1
                 local conditionNodes = parseScope("doKeyword")
                 cursor = cursor + 1
-                addLocalNode("if",{condition=conditionNodes,nodes=parseScope("endKeyword")})
+                local nodes = parseScope("endKeyword")
+                table.insert(ifs,{condition=conditionNodes,nodes=nodes})
+                cursor = cursor + 1
+                if tokens[cursor].type == "elseifKeyword" then
+                    while tokens[cursor].type == "elseifKeyword" do
+                        cursor = cursor + 1
+                        local conditionNodes = parseScope("doKeyword")
+                        cursor = cursor + 1
+                        local nodes = parseScope("endKeyword")
+                        cursor = cursor + 1
+                        table.insert(ifs,{condition=conditionNodes,nodes=nodes})
+                    end
+                end
+                if tokens[cursor].type == "elseKeyword" then
+                    cursor = cursor + 1
+                    local nodes = parseScope("endKeyword")
+                    addLocalNode("if",{ifs=ifs,["else"]=nodes})
+                else
+                    cursor = cursor - 1
+                    addLocalNode("if",{ifs=ifs,["else"]=nil})
+                end
             else
                 parserError("Unknown inner scope Token - \""..tokens[cursor].type.."\"")
             end
