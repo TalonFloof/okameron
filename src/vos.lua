@@ -18,14 +18,19 @@ end
 
 local codegen = require("codegen-"..arch)
 local lexer = require("lexer")
+local parser = require("parser")
 local infile = io.open(args[1],"rb")
-local code = infile:read("*a")
+local code = infile:read("*a").."\n"
 infile:close()
+for i in code:gmatch("([^\n]*)\n") do
+
+end
 local tokens = lexer(code)
-for i,j in ipairs(tokens) do
+--[[for i,j in ipairs(tokens) do
     io.write("Token "..i..": ")
     for key, val in pairs(j) do
         io.write(key.."="..val.." ")
     end
     print()
-end
+end]]
+local astNodes = parser(tokens)
