@@ -93,16 +93,21 @@ local function parse(tokens)
             local name = tokens[cursor].txt
             cursor = cursor + 1
             local curPara = "in"
-            local para = {["in"]={},out={}}
+            local len = 0
+            local para = {["in"]={["_n"]=0},out={["_n"]=0}}
             if tokens[cursor].type == "parameter" then
                 while tokens[cursor].type == "parameter" do
-                    table.insert(para[curPara],tokens[cursor].txt)
+                    para[curPara][tokens[cursor].txt] = len
+                    len = len + 1
                     cursor = cursor + 1
                     if tokens[cursor].type == "parameterSeperator" then
+                        para[curPara]["_n"] = len
+                        len = 0
                         curPara = "out"
                         cursor = cursor + 1
                     end
                 end
+                para[curPara]["_n"] = len
             end
             addNode("function",{name=name,params=para,nodes=parseScope("endKeyword")})
             cursor = cursor + 1
