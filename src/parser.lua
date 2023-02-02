@@ -34,7 +34,7 @@ local function parse(tokens)
         cursor = cursor + 1
         while tokens[cursor].type ~= "endCall" do
             if tokens[cursor].type == "startCall" then
-                addLocalNode("call",parseCall())
+                table.insert(nodes,parseCall())
             elseif tokens[cursor].type == "identifier" then
                 addLocalNode("symbol",tokens[cursor].txt)
                 cursor = cursor + 1
@@ -49,7 +49,7 @@ local function parse(tokens)
             end
         end
         cursor = cursor + 1
-        return {type="call",name=name,nodes=nodes}
+        return {type="call",data={name=name,nodes=nodes}}
     end
     while cursor < #tokens do
         if tokens[cursor].type == "startCall" then

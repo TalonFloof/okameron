@@ -75,6 +75,5 @@ infile:close()
 
 local tokens = lexer(code)
 local astNodes = parser(tokens)
-print(serialize_list(astNodes))
---[[local finalASM = codegen(asmCode,astNodes)
-print(finalASM)]]
+local finalASM = codegen(asmCode,astNodes)
+print(finalASM)
