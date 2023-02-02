@@ -58,13 +58,13 @@ return function(code)
         elseif code:sub(cursor,cursor) == ")" then
             addToken("endCall")
         else
-            for i,j in ipairs(tokens) do
+            --[[for i,j in ipairs(tokens) do
                 io.write("Token "..i..": ")
                 for key, val in pairs(j) do
                     io.write(key.."="..val.." ")
                 end
                 print()
-            end
+            end]]
             lexerError("Invalid Syntax")
         end
     end

@@ -44,8 +44,8 @@ local asmCode = ""
 local function include(path,str)
     local lines = {}
     for i in str:gmatch("([^\n]*)\n") do
-        if i:sub(1,10) == ".include \"" then
-            local incPath = path..load("return "..i:sub(10),"=includeparse","t",{})()
+        if i:sub(1,10) == "(include \"" and i:sub(#i-1,#i) == "\")" then
+            local incPath = path..load("return "..i:sub(10,#i-1),"=includeparse","t",{})()
             local file = io.open(incPath,"rb")
             local data = file:read("*a").."\n"
             file:close()
@@ -53,8 +53,8 @@ local function include(path,str)
             for _,j in ipairs(tab) do
                 table.insert(lines,j)
             end
-        elseif i:sub(1,14) == ".include_asm \"" then
-            local incPath = path..load("return "..i:sub(14),"=includeparse","t",{})()
+        elseif i:sub(1,14) == "(include_asm \"" and i:sub(#i-1,#i) == "\")" then
+            local incPath = path..load("return "..i:sub(14,#i-1),"=includeparse","t",{})()
             local file = io.open(incPath,"rb")
             local data = file:read("*a").."\n"
             file:close()
