@@ -28,7 +28,7 @@ return function(code)
     local function isAlphaExt(c)
         return isAlpha(c) or (c:lower() >= "0" and c:lower() <= "9")
     end
-    while cursor < #code do
+    while cursor <= #code do
         if code:sub(cursorStart,cursor) == " " or code:sub(cursorStart,cursor) == "\n" or code:sub(cursorStart,cursor) == "\t" or code:sub(cursorStart,cursor) == "\r" then
             cursorStart = cursor + 1
             cursor = cursor + 1
