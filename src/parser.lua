@@ -49,7 +49,7 @@ local function parse(tokens)
             end
         end
         cursor = cursor + 1
-        return {name=name,nodes=nodes}
+        return {type="call",name=name,nodes=nodes}
     end
     while cursor < #tokens do
         if tokens[cursor].type == "startCall" then
