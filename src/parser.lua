@@ -8,14 +8,6 @@ local function parse(tokens)
         return load("return "..str,"=parseimmediate","t",{})()
     end
     local function parserError(err)
-        for i,j in ipairs(tokens) do
-            io.write("Token "..i..": ")
-            for key, val in pairs(j) do
-                io.write(key.."="..val.." ")
-            end
-            print()
-        end
-        print(serialize_list(astNodes))
         io.stderr:write("\x1b[1;31m"..tokens[cursor].line..":"..tokens[cursor].col.." - "..err.."\x1b[0m\n")
         os.exit(2)
     end

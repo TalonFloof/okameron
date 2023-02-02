@@ -79,8 +79,6 @@ return function(code)
                 addToken("doKeyword")
             elseif str == "loop" then
                 addToken("loopKeyword")
-            elseif str == ".include_asm" then
-                addToken("includeASM")
             elseif str == "auto" then
                 addToken("autoKeyword")
             elseif str == "var" then
@@ -97,6 +95,7 @@ return function(code)
             cursor = cursor - 1
             addToken("number")
         elseif code:sub(cursor,cursor) == '"' then
+            cursor = cursor + 1
             while code:sub(cursor,cursor) ~= '"' and code:sub(cursor-1,cursor-1) ~= "\\" do cursor = cursor + 1 end
             addToken("string")
         else
