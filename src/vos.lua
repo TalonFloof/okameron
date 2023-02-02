@@ -74,6 +74,6 @@ local code = table.concat(include(getParentDir(args[1]),infile:read("*a").."\n")
 infile:close()
 
 local tokens = lexer(code)
-local astNodes = parser(tokens)
+--[[local astNodes = parser(tokens)
 local finalASM = codegen(asmCode,astNodes)
-print(finalASM)
+print(finalASM)]]

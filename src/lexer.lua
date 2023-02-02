@@ -40,64 +40,23 @@ return function(code)
             while code:sub(cursor,cursor+1) ~= "*/" do cursor = cursor + 1 end
             cursor = cursor + 2
             cursorStart = cursor
-        elseif code:sub(cursorStart,cursor) == "(" then
-            cursorStart = cursorStart + 1
-            cursor = cursor + 1
-            while true do
-                while code:sub(cursor,cursor) ~= " " and code:sub(cursor,cursor) ~= ")" and code:sub(cursor,cursor) ~= "|" do cursor = cursor + 1 end
-                if code:sub(cursorStart,cursor) == ")" then
-                    cursorStart = cursorStart + 1
-                    cursor = cursor + 1
-                    break
-                elseif code:sub(cursorStart,cursor) == "|" then
-                    addToken("parameterSeperator")
-                elseif code:sub(cursorStart,cursor) ~= " " then
-                    cursor = cursor - 1
-                    addToken("parameter")
-                else
-                    cursorStart = cursorStart + 1
-                    cursor = cursor + 1
-                end
-            end
-        elseif code:sub(cursorStart,cursor) == "," then
-            addToken("comma")
+        elseif code:sub(cursor,cursor) == "(" then
+            addToken("startCall")
         elseif isAlpha(code:sub(cursor,cursor)) or isSymbol(code:sub(cursor,cursor)) then
             while isAlphaExt(code:sub(cursor,cursor)) or isSymbol(code:sub(cursor,cursor)) do cursor = cursor + 1 end
             cursor = cursor - 1
             local str = code:sub(cursorStart,cursor)
-            if str == "fn" then
-                addToken("fnKeyword")
-            elseif str == "end" then
-                addToken("endKeyword")
-            elseif str == "if" then
-                addToken("ifKeyword")
-            elseif str == "elseif" then
-                addToken("elseifKeyword")
-            elseif str == "else" then
-                addToken("elseKeyword")
-            elseif str == "do" then
-                addToken("doKeyword")
-            elseif str == "loop" then
-                addToken("loopKeyword")
-            elseif str == "auto" then
-                addToken("autoKeyword")
-            elseif str == "var" then
-                addToken("varKeyword")
-            elseif str == "const" then
-                addToken("constKeyword")
-            elseif str == "struct" then
-                addToken("structKeyword")
-            else
-                addToken("identifier")
-            end
-        elseif isNumber(code:sub(cursor,cursor)) then
-            while isNumberExt(code:sub(cursor,cursor)) do cursor = cursor + 1 end
-            cursor = cursor - 1
-            addToken("number")
+            addToken("identifier")
         elseif code:sub(cursor,cursor) == '"' then
             cursor = cursor + 1
             while code:sub(cursor,cursor) ~= '"' and code:sub(cursor-1,cursor-1) ~= "\\" do cursor = cursor + 1 end
             addToken("string")
+        elseif isNumber(code:sub(cursor,cursor)) then
+            while isNumberExt(code:sub(cursor,cursor)) do cursor = cursor + 1 end
+            cursor = cursor - 1
+            addToken("number")
+        elseif code:sub(cursor,cursor) == ")" then
+            addToken("endCall")
         else
             for i,j in ipairs(tokens) do
                 io.write("Token "..i..": ")
