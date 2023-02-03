@@ -56,9 +56,13 @@ return function(asmCode,astNodes)
         elseif arg.type == "number" then
             text("    la "..reg..", "..arg.data.."\n")
         elseif arg.type == "symbol" then
-            for i,j in ipairs(curArgs) do
-                if j == arg.data then
-                    text("    add "..reg..", a"..(i-1)..", zero\n")
+            if variables[arg.data] then
+
+            else
+                for i,j in ipairs(curArgs) do
+                    if j == arg.data then
+                        text("    add "..reg..", a"..(i-1)..", zero\n")
+                    end
                 end
             end
         end
@@ -262,6 +266,11 @@ return function(asmCode,astNodes)
                 text("    add a0, zero, "..reg.."\n")
             end
             text("    b .ret\n")
+        end,
+        ["="] = function(args)
+            if variables[args[1].data] ~= nil then
+                
+            end
         end
     }
 
@@ -293,18 +302,19 @@ return function(asmCode,astNodes)
     forEach(astNodes,"function",function(node)
         curArgs = node.data.args
         text(".global "..node.data.name..":\n")
-        variables = {}
+        variables = {["_n"]=0}
         for _,i in ipairs(node.data.nodes) do
-            if functions[i.data.name] == "auto" then
+            if i.data.name == "auto" then
                 for _,varName in ipairs(i.data.nodes) do
-                    print(varName)
+                    variables[varName.data] = ((variables["_n"]*-4)-8)
+                    variables["_n"] = variables["_n"] + 1
                 end
-                saved["_n"] = saved["_n"] + 1
             end
         end
-        saved["_n"] = nil
+        text("    addi sp, \n")
+        variables["_n"] = nil
         for _,i in pairs(node.data.nodes) do
-            if functions[i.data.name] ~= nil and functions[i.data.name] ~= "auto" then
+            if functions[i.data.name] ~= nil and i.data.name ~= "auto" then
                 functions[i.data.name](i.data.nodes)
             end
         end
