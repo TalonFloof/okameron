@@ -368,7 +368,7 @@ return function(asmCode,astNodes)
             for i=1,ifs do
                 local condition = ralloc()
                 getVal(args[i],condition)
-                text("    beq "..condition..", zero, .VOSIF"..ifID.."_"..i.."\n")
+                text("    beq "..condition..", zero, .VOSIf"..ifID.."_"..i.."\n")
                 rfree(condition)
             end
             if ifs ~= #args then

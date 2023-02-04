@@ -1,3 +1,14 @@
+local function getdirectory(p)
+	for i = #p, 1, -1 do
+		if p:sub(i,i) == "/" then
+			return p:sub(1,i)
+		end
+	end
+
+	return "./"
+end
+local sd = getdirectory(arg[0])
+
 local args = {...}
 local arch = "okami1041"
 
@@ -66,9 +77,9 @@ local function include(path,str) -- Basically the Preprocessor
     return lines
 end
 
-local codegen = require("codegen-"..arch)
-local lexer = require("lexer")
-local parser = require("parser")
+local codegen = dofile(sd.."codegen-"..arch..".lua")
+local lexer = dofile(sd.."lexer.lua")
+local parser = dofile(sd.."parser.lua")
 local infile = io.open(args[1],"rb")
 local code = table.concat(include(getParentDir(args[1]),infile:read("*a").."\n"),"\n")
 infile:close()
