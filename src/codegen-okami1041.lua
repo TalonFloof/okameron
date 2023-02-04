@@ -209,6 +209,33 @@ return function(asmCode,astNodes)
                 end
             end
         end,
+        ["<<"] = function(args,reg)
+            local val1 = ralloc()
+            getVal(args[1],val1)
+            local val2 = ralloc()
+            rfree(val1)
+            getVal(args[2],val2)
+            rfree(val2)
+            text("    sll "..reg..", "..val1..", "..val2.."\n")
+        end,
+        [">>"] = function(args,reg)
+            local val1 = ralloc()
+            getVal(args[1],val1)
+            local val2 = ralloc()
+            rfree(val1)
+            getVal(args[2],val2)
+            rfree(val2)
+            text("    srl "..reg..", "..val1..", "..val2.."\n")
+        end,
+        ["s>>"] = function(args,reg)
+            local val1 = ralloc()
+            getVal(args[1],val1)
+            local val2 = ralloc()
+            rfree(val1)
+            getVal(args[2],val2)
+            rfree(val2)
+            text("    sra "..reg..", "..val1..", "..val2.."\n")
+        end,
         ["<"] = function(args,reg)
             getVal(args[1],reg)
             local r = ralloc()
@@ -224,6 +251,79 @@ return function(asmCode,astNodes)
             rfree(r)
             text("    sltu "..reg..", "..reg..", "..r.."\n")
         end,
+        [">"] = function(args,reg)
+            getVal(args[1],reg)
+            local r = ralloc()
+            rfree(reg)
+            getVal(args[2],r)
+            rfree(r)
+            text("    slt "..reg..", "..r..", "..reg.."\n")
+        end,
+        ["u>"] = function(args,reg)
+            getVal(args[1],reg)
+            local r = ralloc()
+            getVal(args[2],r)
+            rfree(r)
+            text("    sltu "..reg..", "..r..", "..reg.."\n")
+        end,
+        ["=="] = function(args,reg)
+            getVal(args[1],reg)
+            local r = ralloc()
+            getVal(args[2],r)
+            rfree(r)
+            text("    sub "..reg..", "..reg..", "..r.."\n")
+            text("    sltiu "..reg..", "..reg..", 1\n")
+        end,
+        ["!="] = function(args,reg)
+            getVal(args[1],reg)
+            local r = ralloc()
+            getVal(args[2],r)
+            rfree(r)
+            text("    sub "..reg..", "..reg..", "..r.."\n")
+            text("    sltu "..reg..", zero, "..reg.."\n")
+        end,
+        ["b!"] = function(args)
+            local addr = ralloc()
+            getVal(args[1],addr)
+            local val = ralloc()
+            rfree(addr)
+            getVal(args[2],val)
+            rfree(val)
+            text("    sb "..val..", 0("..addr..")\n")
+        end,
+        ["b@"] = function(args,reg)
+            local addr = ralloc()
+            getVal(args[1],addr)
+            rfree(addr)
+            text("    lbu "..reg..", 0("..addr..")\n")
+        end,
+        ["sb@"] = function(args,reg)
+            local addr = ralloc()
+            getVal(args[1],addr)
+            rfree(addr)
+            text("    lb "..reg..", 0("..addr..")\n")
+        end,
+        ["h!"] = function(args)
+            local addr = ralloc()
+            getVal(args[1],addr)
+            local val = ralloc()
+            rfree(addr)
+            getVal(args[2],val)
+            rfree(val)
+            text("    sh "..val..", 0("..addr..")\n")
+        end,
+        ["h@"] = function(args,reg)
+            local addr = ralloc()
+            getVal(args[1],addr)
+            rfree(addr)
+            text("    lhu "..reg..", 0("..addr..")\n")
+        end,
+        ["sh@"] = function(args,reg)
+            local addr = ralloc()
+            getVal(args[1],addr)
+            rfree(addr)
+            text("    lh "..reg..", 0("..addr..")\n")
+        end,
         ["w!"] = function(args)
             local addr = ralloc()
             getVal(args[1],addr)
@@ -233,14 +333,11 @@ return function(asmCode,astNodes)
             rfree(val)
             text("    sw "..val..", 0("..addr..")\n")
         end,
-        ["w@"] = function(args)
+        ["w@"] = function(args,reg)
             local addr = ralloc()
             getVal(args[1],addr)
-            local val = ralloc()
             rfree(addr)
-            getVal(args[2],val)
-            rfree(val)
-            text("    lw "..val..", 0("..addr..")\n")
+            text("    lw "..reg..", 0("..addr..")\n")
         end,
         ["while"] = function(args)
             local loopID = loopCount
@@ -269,12 +366,20 @@ return function(asmCode,astNodes)
             ifCount = ifCount + 1
             local ifs = #args // 2
             for i=1,ifs do
+                local condition = ralloc()
+                getVal(args[i],condition)
+                text("    beq "..condition..", zero, .VOSIF"..ifID.."_"..i.."\n")
+                rfree(condition)
+            end
+            text("    b .VOSIfAfter"..ifID.."\n")
+            for i=1,ifs do
                 text(".VOSIf"..ifID.."_"..i..":\n")
-                text("    ")
+                getVal(args[i*2],nil)
             end
             if ifs ~= #args then -- If this is true, than there's an else statement
                 local elseID = ifCount
             end
+            text(".VOSIfAfter"..ifID..":\n")
         end,
         ["return"] = function(args)
             if args[1] ~= nil then
@@ -322,7 +427,7 @@ return function(asmCode,astNodes)
         text(".global "..node.data.name..":\n")
         variables = {["_n"]=0}
         for _,i in ipairs(node.data.nodes) do
-            if i.data.name == "auto" then
+            if i.data.name == "int" or i.data.name == "long" then
                 for _,varName in ipairs(i.data.nodes) do
                     variables[varName.data] = ((variables["_n"]*-4)-8)
                     variables["_n"] = variables["_n"] + 1
