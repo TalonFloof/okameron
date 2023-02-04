@@ -58,7 +58,7 @@ return function(asmCode,astNodes)
             text("    la "..reg..", "..arg.data.."\n")
         elseif arg.type == "symbol" then
             if variables[arg.data] then
-
+                text("    lw "..reg..", "..variables[arg.data].."(fp)\n")
             else
                 for i,j in ipairs(curArgs) do
                     if j == arg.data then
@@ -415,6 +415,12 @@ return function(asmCode,astNodes)
 
     forEach(astNodes,"function",function(node)
         functions[node.data.name] = function(args,r)
+            for i,j in ipairs(args) do
+                local reg = ralloc()
+                getVal(args[i],reg)
+                rfree(reg)
+                text("    add a"..(i-1)..", zero, "..reg.."\n")
+            end
             text("    bl "..node.data.name.."\n")
             if r ~= nil then
                 text("    add "..r..", a0, zero\n")
@@ -429,19 +435,26 @@ return function(asmCode,astNodes)
         for _,i in ipairs(node.data.nodes) do
             if i.data.name == "int" or i.data.name == "long" then
                 for _,varName in ipairs(i.data.nodes) do
-                    variables[varName.data] = ((variables["_n"]*-4)-8)
+                    variables[varName.data] = -((variables["_n"]*4)+(#curArgs*4))
                     variables["_n"] = variables["_n"] + 1
                 end
             end
         end
-        text("    addi sp, \n")
+        text("    sw fp, 0(sp)\n")
+        text("    add fp, sp, zero\n")
+        text("    addi sp, sp, -"..(#curArgs*4+4).."\n")
+        for i=1,#curArgs do
+            text("    sw a"..(i-1)..", "..(32-((i-1)*4)).."(sp)\n")
+        end
         variables["_n"] = nil
         for _,i in pairs(node.data.nodes) do
-            if functions[i.data.name] ~= nil and i.data.name ~= "auto" then
+            if functions[i.data.name] ~= nil and i.data.name ~= "int" and i.data.name ~= "long" then
                 functions[i.data.name](i.data.nodes)
             end
         end
         text(".ret:\n")
+        text("    add sp, fp, zero\n")
+        text("    lw fp, 0(sp)\n")
         text("    blr zero, ra\n")
         allocated = {}
     end)
