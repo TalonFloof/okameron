@@ -392,7 +392,10 @@ return function(asmCode,astNodes)
         end,
         ["="] = function(args)
             if variables[args[1].data] ~= nil then
-                
+                local reg = ralloc()
+                getVal(args[2],reg)
+                rfree(reg)
+                text("    sw "..reg..", "..variables[args[1].data].."(fp)\n")
             end
         end
     }
@@ -440,11 +443,16 @@ return function(asmCode,astNodes)
                 end
             end
         end
+        text("    sw ra, 0(sp)\n")
+        text("    addi sp, sp, -4\n")
         text("    sw fp, 0(sp)\n")
         text("    add fp, sp, zero\n")
         text("    addi sp, sp, -"..(#curArgs*4+4).."\n")
         for i=1,#curArgs do
             text("    sw a"..(i-1)..", "..(32-((i-1)*4)).."(sp)\n")
+        end
+        if variables["_n"] ~= 0 then
+            text("    addi sp, sp, -"..(variables["_n"]*4).."\n")
         end
         variables["_n"] = nil
         for _,i in pairs(node.data.nodes) do
@@ -454,7 +462,9 @@ return function(asmCode,astNodes)
         end
         text(".ret:\n")
         text("    add sp, fp, zero\n")
+        text("    lw ra, -4(sp)\n")
         text("    lw fp, 0(sp)\n")
+        text("    addi sp, sp, 4\n")
         text("    blr zero, ra\n")
         allocated = {}
     end)
