@@ -18,6 +18,7 @@ return function(asmCode,astNodes)
     local saved = {}
     local variables = {}
     local loopCount = 1
+    local ifCount = 1
     local seenTempWarn = false
 
     local function ralloc()
@@ -257,6 +258,23 @@ return function(asmCode,astNodes)
             end
             text("    b .VOSLoop"..loopID.."\n")
             text(".VOSLoopAfter"..loopID..":\n")
+        end,
+        ["do"] = function(args)
+            for _,i in ipairs(args) do
+                getVal(i,nil)
+            end
+        end,
+        ["if"] = function(args)
+            local ifID = ifCount
+            ifCount = ifCount + 1
+            local ifs = #args // 2
+            for i=1,ifs do
+                text(".VOSIf"..ifID.."_"..i..":\n")
+                text("    ")
+            end
+            if ifs ~= #args then -- If this is true, than there's an else statement
+                local elseID = ifCount
+            end
         end,
         ["return"] = function(args)
             if args[1] ~= nil then
