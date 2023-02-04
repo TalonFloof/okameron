@@ -62,7 +62,7 @@ return function(asmCode,astNodes)
             else
                 for i,j in ipairs(curArgs) do
                     if j == arg.data then
-                        text("    add "..reg..", a"..(i-1)..", zero\n")
+                        text("    lw "..reg..", "..(i*-4).."(fp)\n")
                     end
                 end
             end
@@ -371,13 +371,18 @@ return function(asmCode,astNodes)
                 text("    beq "..condition..", zero, .VOSIF"..ifID.."_"..i.."\n")
                 rfree(condition)
             end
-            text("    b .VOSIfAfter"..ifID.."\n")
+            if ifs ~= #args then
+                text("    b .VOSIfElse"..ifID.."\n")
+            else
+                text("    b .VOSIfAfter"..ifID.."\n")
+            end
             for i=1,ifs do
                 text(".VOSIf"..ifID.."_"..i..":\n")
                 getVal(args[i*2],nil)
             end
             if ifs ~= #args then -- If this is true, than there's an else statement
-                local elseID = ifCount
+                text(".VOSIfElse"..ifID..":\n")
+                getVal(args[#args],nil)
             end
             text(".VOSIfAfter"..ifID..":\n")
         end,

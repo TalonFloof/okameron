@@ -41,7 +41,7 @@ end
 
 local asmCode = ""
 
-local function include(path,str)
+local function include(path,str) -- Basically the Preprocessor
     local lines = {}
     for i in str:gmatch("([^\n]*)\n") do
         if i:sub(1,10) == "(include \"" and i:sub(#i-1,#i) == "\")" then
@@ -76,4 +76,6 @@ infile:close()
 local tokens = lexer(code)
 local astNodes = parser(tokens)
 local finalASM = codegen(asmCode,astNodes)
-print(finalASM)
+local outfile = io.open(args[2],"w")
+outfile:write(finalASM)
+outfile:close()
