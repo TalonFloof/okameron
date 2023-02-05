@@ -98,6 +98,23 @@ local function parse(tokens)
                 expectToken("endCall")
                 cursor = cursor + 1
                 addNode("constantString",{name=tokens[cursor-3].txt,val=parseImm(tokens[cursor-2].txt)})
+            elseif name == "struct" then
+                cursor = cursor + 1
+                expectToken("identifier")
+                local name = tokens[cursor].txt
+                cursor = cursor + 1
+                local vals = {}
+                local offset = 0
+                while tokens[cursor].type ~= "endCall" do
+                    expectToken("number")
+                    local num = parseImm(tokens[cursor].txt)
+                    cursor = cursor + 1
+                    expectToken("identifier")
+                    cursor = cursor + 1
+                    table.insert(args,{name=tokens[cursor-1].txt,offset=offset})
+                    offset = offset + num
+                end
+                addNode("struct",{name=tokens[cursor-3].txt,entries=vals})
             else
                 parserError("Unknown keyword \""..tokens[cursor].type.."\" in global scope")
             end

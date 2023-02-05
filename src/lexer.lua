@@ -20,7 +20,7 @@ return function(code)
         return isNumber(c) or ((c:lower() >= "a" and c:lower() <= "f") or c == "x" or c == "o")
     end
     local function isSymbol(c)
-        return c == "!" or c == "@" or c == "=" or c == "<" or c == ">" or c == "|" or c == "^" or c == "*" or c =="+" or c == "-" or c == "/" or c == "%" or c == "&"
+        return c == "!" or c == "@" or c == "=" or c == "<" or c == ">" or c == "|" or c == "^" or c == "*" or c =="+" or c == "-" or c == "/" or c == "%" or c == "&" or c == "."
     end
     local function isAlpha(c)
         return (c:lower() >= "a" and c:lower() <= "z") or c == "_"

@@ -373,10 +373,7 @@ return function(asmCode,astNodes)
             text("    beq "..condition..", zero, .VOSLoopAfter"..loopID.."\n")
             rfree(condition)
             for index=2,#args do
-                local i = args[index]
-                if functions[i.data.name] ~= nil then
-                    getVal(i,nil)
-                end
+                getVal(args[index],nil)
             end
             text("    b .VOSLoop"..loopID.."\n")
             text(".VOSLoopAfter"..loopID..":\n")
@@ -442,6 +439,14 @@ return function(asmCode,astNodes)
         bss(node.data.name..": .resb "..node.data.size.."\n")
         functions[node.data.name] = function(args,r)
             text("    la "..r..", "..node.data.name.."\n")
+        end
+    end)
+
+    forEach(astNodes,"struct",function(node)
+        for i,j in ipairs(node.data.entries) do
+            functions[node.data.name.."."..j.name] = function(args,r)
+                text("    li "..r..", "..j.offset.."\n")
+            end
         end
     end)
 
