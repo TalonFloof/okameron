@@ -17,6 +17,7 @@ return function(asmCode,astNodes)
     local allocated = {}
     local saved = {}
     local variables = {}
+    local strCount = 1
     local loopCount = 1
     local ifCount = 1
     local seenTempWarn = false
@@ -53,9 +54,30 @@ return function(asmCode,astNodes)
         if arg.type == "call" then
             if functions[arg.data.name] ~= nil then
                 functions[arg.data.name](arg.data.nodes,reg)
+            else
+                text("    /* Calling External Symbol: "..arg.data.name.." */\n")
+                for i,j in ipairs(arg.data.nodes) do
+                    local r = ralloc()
+                    getVal(j,r)
+                    rfree(r)
+                    text("    add a"..(i-1)..", zero, "..r.."\n")
+                end
+                text("    bl "..arg.data.name.."\n")
+                if r ~= nil then
+                    text("    add "..reg..", a0, zero\n")
+                end
             end
         elseif arg.type == "number" then
             text("    la "..reg..", "..arg.data.."\n")
+        elseif arg.type == "string" then
+            local strID = strCount
+            rodata("_VOSString"..strID..": ")
+            for i=1,#arg.data do
+                rodata(".byte "..string.byte(string.sub(arg.data,i,i)).." ")
+            end
+            rodata(".byte 0\n")
+            text("    la"..reg..", _VOSString"..strID.."\n")
+            strCount = strCount + 1
         elseif arg.type == "symbol" then
             if variables[arg.data] then
                 text("    lw "..reg..", "..variables[arg.data].."(fp)\n")
@@ -413,9 +435,27 @@ return function(asmCode,astNodes)
         end
     end
 
+    forEach(astNodes,"globalVar",function(node)
+        bss(node.data.name..": .resb "..node.data.size.."\n")
+        functions[node.data.name] = function(args,r)
+            text("    la "..r..", "..node.data.name.."\n")
+        end
+    end)
+
     forEach(astNodes,"constant",function(node)
         functions[node.data.name] = function(args,r)
             text("    la "..r..", "..node.data.val.."\n")
+        end
+    end)
+    
+    forEach(astNodes,"constantString",function(node)
+        rodata(node.data.name..": ")
+        for i=1,#node.data.val do
+            rodata(".byte "..string.byte(string.sub(node.data.val,i,i)).." ")
+        end
+        rodata(".byte 0\n")
+        functions[node.data.name] = function(args,r)
+            text("    la "..r..", "..node.data.name.."\n")
         end
     end)
 
@@ -461,8 +501,8 @@ return function(asmCode,astNodes)
         end
         variables["_n"] = nil
         for _,i in pairs(node.data.nodes) do
-            if functions[i.data.name] ~= nil and i.data.name ~= "int" and i.data.name ~= "long" then
-                functions[i.data.name](i.data.nodes)
+            if i.data.name ~= "int" and i.data.name ~= "long" then
+                getVal(i,nil)
             end
         end
         text(".ret:\n")

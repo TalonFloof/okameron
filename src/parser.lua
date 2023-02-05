@@ -16,11 +16,6 @@ local function parse(tokens)
             parserError("Expected token \""..tokenType.."\" got \""..tokens[cursor].type.."\".")
         end
     end
-    local function dontExpectToken(tokenType)
-        if tokens[cursor].type == tokenType then
-            parserError("Didn't expect token \""..tokenType.."\" but got it anyway.")
-        end
-    end
     local function parseCall()
         local nodes = {}
         local function addLocalNode(astType,data)
@@ -85,6 +80,24 @@ local function parse(tokens)
                 expectToken("endCall")
                 cursor = cursor + 1
                 addNode("constant",{name=tokens[cursor-3].txt,val=parseImm(tokens[cursor-2].txt)})
+            elseif name == "var" then
+                cursor = cursor + 1
+                expectToken("identifier")
+                cursor = cursor + 1
+                expectToken("number")
+                cursor = cursor + 1
+                expectToken("endCall")
+                cursor = cursor + 1
+                addNode("globalVar",{name=tokens[cursor-3].txt,size=parseImm(tokens[cursor-2].txt)})
+            elseif name == "constStr" then
+                cursor = cursor + 1
+                expectToken("identifier")
+                cursor = cursor + 1
+                expectToken("string")
+                cursor = cursor + 1
+                expectToken("endCall")
+                cursor = cursor + 1
+                addNode("constantString",{name=tokens[cursor-3].txt,val=parseImm(tokens[cursor-2].txt)})
             else
                 parserError("Unknown keyword \""..tokens[cursor].type.."\" in global scope")
             end
@@ -94,5 +107,4 @@ local function parse(tokens)
     end
     return astNodes
 end
-
 return parse

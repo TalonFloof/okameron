@@ -47,6 +47,9 @@ if #args < 2 then
 end
 
 local function getParentDir(path)
+    if path:reverse():find("/") == nil then
+        return "./"
+    end
     return path:sub(1,#path-table.pack(path:reverse():find("/"))[1]+1)
 end
 
