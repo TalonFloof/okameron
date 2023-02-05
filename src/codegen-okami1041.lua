@@ -57,10 +57,7 @@ return function(asmCode,astNodes)
             else
                 text("    /* Calling External Symbol: "..arg.data.name.." */\n")
                 for i,j in ipairs(arg.data.nodes) do
-                    local r = ralloc()
-                    getVal(j,r)
-                    rfree(r)
-                    text("    add a"..(i-1)..", zero, "..r.."\n")
+                    getVal(j,"a"..(i-1))
                 end
                 text("    bl "..arg.data.name.."\n")
                 if r ~= nil then
@@ -68,7 +65,13 @@ return function(asmCode,astNodes)
                 end
             end
         elseif arg.type == "number" then
-            text("    la "..reg..", "..arg.data.."\n")
+            if (arg.data & 0xFFFF0000) == 0 then
+                text("    li "..reg..", "..(arg.data).."\n")
+            elseif (arg.data & 0xFFFF) == 0 then
+                text("    lui "..reg..", "..(arg.data >> 16).."\n")
+            else
+                text("    la "..reg..", "..arg.data.."\n")
+            end
         elseif arg.type == "string" then
             local strID = strCount
             rodata("_VOSString"..strID..": ")
@@ -84,7 +87,7 @@ return function(asmCode,astNodes)
             else
                 for i,j in ipairs(curArgs) do
                     if j == arg.data then
-                        text("    lw "..reg..", "..(i*-4).."(fp)\n")
+                        text("    lw "..reg..", "..((i*4)+4).."(sp)\n")
                     end
                 end
             end
@@ -94,96 +97,96 @@ return function(asmCode,astNodes)
     functions = {
         ["+"] = function(args,reg)
             for i,arg in ipairs(args) do
-                local argR = ralloc()
-                getVal(arg,argR)
-                rfree(argR)
                 if i == 1 then
-                    text("    add "..reg..", zero, "..argR.."\n")
+                    getVal(arg,reg)
                 else
+                    local argR = ralloc()
+                    getVal(arg,argR)
+                    rfree(argR)
                     text("    add "..reg..", "..reg..", "..argR.."\n")
                 end
             end
         end,
         ["-"] = function(args,reg)
             for i,arg in ipairs(args) do
-                local argR = ralloc()
-                getVal(arg,argR)
-                rfree(argR)
                 if i == 1 then
-                    text("    add "..reg..", zero, "..argR.."\n")
+                    getVal(arg,reg)
                 else
+                    local argR = ralloc()
+                    getVal(arg,argR)
+                    rfree(argR)
                     text("    sub "..reg..", "..reg..", "..argR.."\n")
                 end
             end
         end,
         ["*"] = function(args,reg)
             for i,arg in ipairs(args) do
-                local argR = ralloc()
-                getVal(arg,argR)
-                rfree(argR)
                 if i == 1 then
-                    text("    add "..reg..", zero, "..argR.."\n")
+                    getVal(arg,reg)
                 else
+                    local argR = ralloc()
+                    getVal(arg,argR)
+                    rfree(argR)
                     text("    mul "..reg..", zero, "..reg..", "..argR.."\n")
                 end
             end
         end,
         ["u*"] = function(args,reg)
             for i,arg in ipairs(args) do
-                local argR = ralloc()
-                getVal(arg,argR)
-                rfree(argR)
                 if i == 1 then
-                    text("    add "..reg..", zero, "..argR.."\n")
+                    getVal(arg,reg)
                 else
+                    local argR = ralloc()
+                    getVal(arg,argR)
+                    rfree(argR)
                     text("    mulu "..reg..", zero, "..reg..", "..argR.."\n")
                 end
             end
         end,
         ["/"] = function(args,reg)
             for i,arg in ipairs(args) do
-                local argR = ralloc()
-                getVal(arg,argR)
-                rfree(argR)
                 if i == 1 then
-                    text("    add "..reg..", zero, "..argR.."\n")
+                    getVal(arg,reg)
                 else
+                    local argR = ralloc()
+                    getVal(arg,argR)
+                    rfree(argR)
                     text("    div "..reg..", zero, "..reg..", "..argR.."\n")
                 end
             end
         end,
         ["u/"] = function(args,reg)
             for i,arg in ipairs(args) do
-                local argR = ralloc()
-                getVal(arg,argR)
-                rfree(argR)
                 if i == 1 then
-                    text("    add "..reg..", zero, "..argR.."\n")
+                    getVal(arg,reg)
                 else
+                    local argR = ralloc()
+                    getVal(arg,argR)
+                    rfree(argR)
                     text("    divu "..reg..", zero, "..reg..", "..argR.."\n")
                 end
             end
         end,
         ["%"] = function(args,reg)
             for i,arg in ipairs(args) do
-                local argR = ralloc()
-                getVal(arg,argR)
-                rfree(argR)
                 if i == 1 then
-                    text("    add "..reg..", zero, "..argR.."\n")
+                    getVal(arg,reg)
                 else
+                    local argR = ralloc()
+                    getVal(arg,argR)
+                    rfree(argR)
                     text("    div zero, "..reg..", "..reg..", "..argR.."\n")
                 end
             end
         end,
         ["u%"] = function(args,reg)
             for i,arg in ipairs(args) do
-                local argR = ralloc()
-                getVal(arg,argR)
-                rfree(argR)
                 if i == 1 then
-                    text("    add "..reg..", zero, "..argR.."\n")
+                    getVal(arg,reg)
                 else
+                    local argR = ralloc()
+                    getVal(arg,argR)
+                    rfree(argR)
                     text("    divu zero, "..reg..", "..reg..", "..argR.."\n")
                 end
             end
@@ -197,36 +200,36 @@ return function(asmCode,astNodes)
         end,
         ["&"] = function(args,reg)
             for i,arg in ipairs(args) do
-                local argR = ralloc()
-                getVal(arg,argR)
-                rfree(argR)
                 if i == 1 then
-                    text("    add "..reg..", zero, "..argR.."\n")
+                    getVal(arg,reg)
                 else
+                    local argR = ralloc()
+                    getVal(arg,argR)
+                    rfree(argR)
                     text("    and "..reg..", "..reg..", "..argR.."\n")
                 end
             end
         end,
         ["|"] = function(args,reg)
             for i,arg in ipairs(args) do
-                local argR = ralloc()
-                getVal(arg,argR)
-                rfree(argR)
                 if i == 1 then
-                    text("    add "..reg..", zero, "..argR.."\n")
+                    getVal(arg,reg)
                 else
+                    local argR = ralloc()
+                    getVal(arg,argR)
+                    rfree(argR)
                     text("    or "..reg..", "..reg..", "..argR.."\n")
                 end
             end
         end,
         ["^"] = function(args,reg)
             for i,arg in ipairs(args) do
-                local argR = ralloc()
-                getVal(arg,argR)
-                rfree(argR)
                 if i == 1 then
-                    text("    add "..reg..", zero, "..argR.."\n")
+                    getVal(arg,reg)
                 else
+                    local argR = ralloc()
+                    getVal(arg,argR)
+                    rfree(argR)
                     text("    xor "..reg..", "..reg..", "..argR.."\n")
                 end
             end
@@ -464,10 +467,7 @@ return function(asmCode,astNodes)
     forEach(astNodes,"function",function(node)
         functions[node.data.name] = function(args,r)
             for i,j in ipairs(args) do
-                local reg = ralloc()
-                getVal(args[i],reg)
-                rfree(reg)
-                text("    add a"..(i-1)..", zero, "..reg.."\n")
+                getVal(args[i],"a"..(i-1))
             end
             text("    bl "..node.data.name.."\n")
             if r ~= nil then
@@ -480,24 +480,20 @@ return function(asmCode,astNodes)
         curArgs = node.data.args
         text(".global "..node.data.name..":\n")
         variables = {["_n"]=0}
+        local argSize = #curArgs*4
         for _,i in ipairs(node.data.nodes) do
             if i.data.name == "int" or i.data.name == "long" then
                 for _,varName in ipairs(i.data.nodes) do
-                    variables[varName.data] = (variables["_n"]*4)+4
+                    variables[varName.data] = (variables["_n"]*4)+(argSize+8)
                     variables["_n"] = variables["_n"] + 1
                 end
             end
         end
-        text("    sw ra, 0(sp)\n")
-        text("    addi sp, sp, -4\n")
-        text("    sw fp, 0(sp)\n")
-        text("    add fp, sp, zero\n")
-        text("    addi sp, sp, -"..(#curArgs*4+4).."\n")
+        local varSize = variables["_n"]*4
+        text("    addi sp, sp, -"..(varSize+argSize+4).."\n")
+        text("    sw ra, 4(sp)\n")
         for i=1,#curArgs do
-            text("    sw a"..(i-1)..", "..((#curArgs*4)-((i-1)*4)).."(sp)\n")
-        end
-        if variables["_n"] ~= 0 then
-            text("    addi sp, sp, -"..(variables["_n"]*4).."\n")
+            text("    sw a"..(i-1)..", "..((i*4)+4).."(sp)\n")
         end
         variables["_n"] = nil
         for _,i in pairs(node.data.nodes) do
@@ -506,10 +502,8 @@ return function(asmCode,astNodes)
             end
         end
         text(".ret:\n")
-        text("    add sp, fp, zero\n")
         text("    lw ra, 4(sp)\n")
-        text("    lw fp, 0(sp)\n")
-        text("    addi sp, sp, 4\n")
+        text("    addi sp, sp, "..(varSize+argSize+8).."\n")
         text("    blr zero, ra\n")
         allocated = {}
     end)
