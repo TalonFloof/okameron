@@ -503,7 +503,7 @@ return function(asmCode,astNodes)
         end
         text(".ret:\n")
         text("    lw ra, 4(sp)\n")
-        text("    addi sp, sp, "..(varSize+argSize+8).."\n")
+        text("    addi sp, sp, "..(varSize+argSize+4).."\n")
         text("    blr zero, ra\n")
         allocated = {}
     end)
