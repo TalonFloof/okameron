@@ -372,7 +372,7 @@ return function(asmCode,astNodes)
             for index=2,#args do
                 local i = args[index]
                 if functions[i.data.name] ~= nil then
-                    functions[i.data.name](i.data.nodes)
+                    getVal(i,nil)
                 end
             end
             text("    b .VOSLoop"..loopID.."\n")
