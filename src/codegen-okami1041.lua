@@ -80,7 +80,7 @@ return function(asmCode,astNodes)
             strCount = strCount + 1
         elseif arg.type == "symbol" then
             if variables[arg.data] then
-                text("    lw "..reg..", "..variables[arg.data].."(fp)\n")
+                text("    lw "..reg..", "..variables[arg.data].."(sp)\n")
             else
                 for i,j in ipairs(curArgs) do
                     if j == arg.data then
@@ -390,10 +390,10 @@ return function(asmCode,astNodes)
             for i=1,ifs do
                 local condition = ralloc()
                 getVal(args[i],condition)
-                text("    beq "..condition..", zero, .VOSIf"..ifID.."_"..i.."\n")
+                text("    bne "..condition..", zero, .VOSIf"..ifID.."_"..i.."\n")
                 rfree(condition)
             end
-            if ifs ~= #args then
+            if (ifs*2) ~= #args then
                 text("    b .VOSIfElse"..ifID.."\n")
             else
                 text("    b .VOSIfAfter"..ifID.."\n")
@@ -402,7 +402,7 @@ return function(asmCode,astNodes)
                 text(".VOSIf"..ifID.."_"..i..":\n")
                 getVal(args[i*2],nil)
             end
-            if ifs ~= #args then -- If this is true, than there's an else statement
+            if (ifs*2) ~= #args then -- If this is true, than there's an else statement
                 text(".VOSIfElse"..ifID..":\n")
                 getVal(args[#args],nil)
             end
@@ -422,7 +422,7 @@ return function(asmCode,astNodes)
                 local reg = ralloc()
                 getVal(args[2],reg)
                 rfree(reg)
-                text("    sw "..reg..", "..variables[args[1].data].."(fp)\n")
+                text("    sw "..reg..", "..variables[args[1].data].."(sp)\n")
             end
         end
     }
@@ -483,7 +483,7 @@ return function(asmCode,astNodes)
         for _,i in ipairs(node.data.nodes) do
             if i.data.name == "int" or i.data.name == "long" then
                 for _,varName in ipairs(i.data.nodes) do
-                    variables[varName.data] = -((variables["_n"]*4)+(#curArgs*4))
+                    variables[varName.data] = (variables["_n"]*4)+4
                     variables["_n"] = variables["_n"] + 1
                 end
             end
@@ -494,7 +494,7 @@ return function(asmCode,astNodes)
         text("    add fp, sp, zero\n")
         text("    addi sp, sp, -"..(#curArgs*4+4).."\n")
         for i=1,#curArgs do
-            text("    sw a"..(i-1)..", "..(32-((i-1)*4)).."(sp)\n")
+            text("    sw a"..(i-1)..", "..((#curArgs*4)-((i-1)*4)).."(sp)\n")
         end
         if variables["_n"] ~= 0 then
             text("    addi sp, sp, -"..(variables["_n"]*4).."\n")
@@ -507,7 +507,7 @@ return function(asmCode,astNodes)
         end
         text(".ret:\n")
         text("    add sp, fp, zero\n")
-        text("    lw ra, -4(sp)\n")
+        text("    lw ra, 4(sp)\n")
         text("    lw fp, 0(sp)\n")
         text("    addi sp, sp, 4\n")
         text("    blr zero, ra\n")
