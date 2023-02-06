@@ -74,12 +74,12 @@ return function(asmCode,astNodes)
             end
         elseif arg.type == "string" then
             local strID = strCount
-            rodata("_VOSString"..strID..": ")
+            rodata("VOSString"..strID..": ")
             for i=1,#arg.data do
                 rodata(".byte "..string.byte(string.sub(arg.data,i,i)).." ")
             end
             rodata(".byte 0\n")
-            text("    la "..reg..", _VOSString"..strID.."\n")
+            text("    la "..reg..", VOSString"..strID.."\n")
             strCount = strCount + 1
         elseif arg.type == "symbol" then
             if variables[arg.data] then
