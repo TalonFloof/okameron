@@ -80,6 +80,13 @@ local function parse(tokens)
                 expectToken("endCall")
                 cursor = cursor + 1
                 addNode("constant",{name=tokens[cursor-3].txt,val=parseImm(tokens[cursor-2].txt)})
+            elseif name == "extern" then
+                cursor = cursor + 1
+                expectToken("identifier")
+                cursor = cursor + 1
+                expectToken("endCall")
+                cursor = cursor + 1
+                addNode("external",{name=tokens[cursor-2].txt})
             elseif name == "var" then
                 cursor = cursor + 1
                 expectToken("identifier")
