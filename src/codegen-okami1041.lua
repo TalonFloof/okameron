@@ -393,6 +393,9 @@ return function(asmCode,astNodes)
             for i=1,ifs do
                 text(".VOSIf"..ifID.."_"..i..":\n")
                 getVal(args[i*2],nil)
+                if ifs > 1 or ((ifs*2) ~= #args) then
+                    text("b .VOSIfAfter"..ifID.."\n")
+                end
             end
             if (ifs*2) ~= #args then -- If this is true, than there's an else statement
                 text(".VOSIfElse"..ifID..":\n")
