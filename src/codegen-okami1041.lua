@@ -20,6 +20,7 @@ return function(asmCode,astNodes)
     local strCount = 1
     local loopCount = 1
     local ifCount = 1
+    local currentLoop = -1
     local seenTempWarn = false
 
     local function ralloc()
@@ -303,8 +304,8 @@ return function(asmCode,astNodes)
             local addr = ralloc()
             getVal(args[1],addr)
             local val = ralloc()
-            rfree(addr)
             getVal(args[2],val)
+            rfree(addr)
             rfree(val)
             text("    sb "..val..", 0("..addr..")\n")
         end,
@@ -324,8 +325,8 @@ return function(asmCode,astNodes)
             local addr = ralloc()
             getVal(args[1],addr)
             local val = ralloc()
-            rfree(addr)
             getVal(args[2],val)
+            rfree(addr)
             rfree(val)
             text("    sh "..val..", 0("..addr..")\n")
         end,
@@ -345,8 +346,8 @@ return function(asmCode,astNodes)
             local addr = ralloc()
             getVal(args[1],addr)
             local val = ralloc()
-            rfree(addr)
             getVal(args[2],val)
+            rfree(addr)
             rfree(val)
             text("    sw "..val..", 0("..addr..")\n")
         end,
@@ -357,7 +358,9 @@ return function(asmCode,astNodes)
             text("    lw "..reg..", 0("..addr..")\n")
         end,
         ["while"] = function(args)
+            local previous = currentLoop
             local loopID = loopCount
+            currentLoop = loopID
             loopCount = loopCount + 1
             text(".VOSLoop"..loopID..":\n")
             local condition = ralloc()
@@ -369,6 +372,14 @@ return function(asmCode,astNodes)
             end
             text("    b .VOSLoop"..loopID.."\n")
             text(".VOSLoopAfter"..loopID..":\n")
+            currentLoop = previous
+        end,
+        ["break"] = function(args)
+            if currentLoop == -1 then
+                error("Break in non-loop scope")
+            else
+                text("    b .VOSLoopAfter"..currentLoop.."\n")
+            end
         end,
         ["do"] = function(args)
             for _,i in ipairs(args) do
@@ -418,7 +429,19 @@ return function(asmCode,astNodes)
                 getVal(args[2],reg)
                 rfree(reg)
                 text("    sw "..reg..", "..variables[args[1].data].."(sp)\n")
+                return
+            else
+                for i,j in ipairs(curArgs) do
+                    if j == args[1].data then
+                        local reg = ralloc()
+                        getVal(args[2],reg)
+                        rfree(reg)
+                        text("    sw "..reg..", "..((i*4)+4).."(sp)\n")
+                        return
+                    end
+                end
             end
+            error("Unknown Variable: "..args[1].data.."!")
         end
     }
 
@@ -472,6 +495,7 @@ return function(asmCode,astNodes)
 
     forEach(astNodes,"function",function(node)
         functions[node.data.name] = function(args,r)
+            -- Known Bug: Argument Registers are not preserved with nested function calls
             for i,j in ipairs(args) do
                 getVal(args[i],"a"..(i-1))
             end
