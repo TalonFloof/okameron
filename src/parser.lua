@@ -1,8 +1,10 @@
 local function parse(tokens)
     local astNodes = {}
+    local startCursor = 1
     local cursor = 1
     local function addNode(astType,data)
-        table.insert(astNodes,{type=astType,data=data})
+        table.insert(astNodes,{type=astType,line=tokens[startCursor].line,col=tokens[startCursor].col,data=data})
+        startCursor = cursor
     end
     local function parseImm(str)
         return load("return "..str,"=parseimmediate","t",{})()
@@ -19,7 +21,7 @@ local function parse(tokens)
     local function parseCall()
         local nodes = {}
         local function addLocalNode(astType,data)
-            table.insert(nodes,{type=astType,data=data})
+            table.insert(nodes,{type=astType,line=tokens[cursor].line,col=tokens[cursor].col,data=data})
         end
         local start = cursor
         expectToken("startCall")
@@ -44,7 +46,7 @@ local function parse(tokens)
             end
         end
         cursor = cursor + 1
-        return {type="call",data={name=name,nodes=nodes}}
+        return {type="call",line=tokens[start].line,col=tokens[start].col,data={name=name,nodes=nodes}}
     end
     while cursor < #tokens do
         if tokens[cursor].type == "startCall" then
@@ -87,6 +89,16 @@ local function parse(tokens)
                 expectToken("endCall")
                 cursor = cursor + 1
                 addNode("external",{name=tokens[cursor-2].txt})
+            elseif name == "externFn" then
+                cursor = cursor + 1
+                local fns = {}
+                while tokens[cursor].type ~= "endCall" do
+                    expectToken("identifier")
+                    table.insert(fns,tokens[cursor].txt)
+                    cursor = cursor + 1
+                end
+                cursor = cursor + 1
+                addNode("externalFn",{functions=fns})
             elseif name == "var" then
                 cursor = cursor + 1
                 expectToken("identifier")

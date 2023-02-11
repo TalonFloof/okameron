@@ -13,6 +13,7 @@ return function(asmCode,astNodes)
         sections[4] = sections[4] .. str
     end
 
+    local definedFunc = {}
     local functions = {}
     local allocated = {}
     local saved = {}
@@ -22,6 +23,17 @@ return function(asmCode,astNodes)
     local ifCount = 1
     local currentLoop = -1
     local seenTempWarn = false
+    local nestedLevel = 0
+
+    local function codgenErr(err,node)
+        if node == nil then
+            io.stderr:write("\x1b[1;31mANONYMOUS CODEGEN ERROR - "..err.."\x1b[0m\n")
+        else
+            print(serialize_list(node))
+            io.stderr:write("\x1b[1;31m"..node.line..":"..node.col.." - "..err.."\x1b[0m\n")
+        end
+        os.exit(3)
+    end
 
     local function ralloc()
         for i=0,7 do
@@ -31,7 +43,7 @@ return function(asmCode,astNodes)
             end
         end
         if not seenTempWarn then
-            print("\x1b[1;33mWarning: Saved Registers have been allocated, concider simplifying your code.\x1b[0m")
+            io.stderr:write("\x1b[1;33mWarning: Saved Registers have been allocated, concider simplifying your code.\x1b[0m\n")
             seenTempWarn = true
         end
         for i=0,9 do
@@ -40,7 +52,7 @@ return function(asmCode,astNodes)
                 return "s"..i
             end
         end
-        error("All registers are depleated!")
+        codgenErr("All registers are depleated!")
     end
 
     local function rfree(reg)
@@ -51,19 +63,14 @@ return function(asmCode,astNodes)
         end
     end
 
+    local func = function() end
+
     local function getVal(arg,reg)
         if arg.type == "call" then
             if functions[arg.data.name] ~= nil then
                 functions[arg.data.name](arg.data.nodes,reg)
             else
-                text("    /* Calling External Symbol: "..arg.data.name.." */\n")
-                for i,j in ipairs(arg.data.nodes) do
-                    getVal(j,"a"..(i-1))
-                end
-                text("    bl "..arg.data.name.."\n")
-                if r ~= nil then
-                    text("    add "..reg..", a0, zero\n")
-                end
+                codgenErr("Unknown Function: \""..arg.data.name.."\" (Hint: use externFn if its an assembly function)",arg)
             end
         elseif arg.type == "number" then
             if (arg.data & 0xFFFF0000) == 0 then
@@ -93,6 +100,46 @@ return function(asmCode,astNodes)
                 end
             end
         end
+    end
+
+    --[[local function hasNestedFunc(args)
+        for _,node in ipairs(args) do
+            if node.type == "call" then
+                if definedFunc[node.data.name] then
+                    return true
+                elseif hasNestedFunc(node.data.nodes) then
+                    return true
+                end
+            end
+        end
+        return false
+    end]]
+
+    func = function(name,args,r)
+        nestedLevel = nestedLevel + 1
+        if nestedLevel > 1 and #args > 0 then
+            -- print("WARNING!!! Call \""..name.."\" has a nested function. This is currently broken, so proceed with caution...")
+            for i=1,#args do
+                text("    sw a"..(i-1)..", "..((1-i)*4).."(sp)\n")
+            end
+        end
+        for i,j in ipairs(args) do
+            getVal(j,"a"..(i-1))
+        end
+        if nestedLevel > 1 and #args > 0 then
+            text("    addi sp, sp, -"..(#args*4).."\n")
+        end
+        text("    bl "..name.."\n")
+        if r ~= nil then
+            text("    add "..r..", a0, zero\n")
+        end
+        if nestedLevel > 1 and #args > 0 then
+            text("    addi sp, sp, "..(#args*4).."\n")
+            for i=1,#args do
+                text("    lw a"..(i-1)..", "..((1-i)*4).."(sp)\n")
+            end
+        end
+        nestedLevel = nestedLevel - 1
     end
 
     functions = {
@@ -376,7 +423,7 @@ return function(asmCode,astNodes)
         end,
         ["break"] = function(args)
             if currentLoop == -1 then
-                error("Break in non-loop scope")
+                codgenErr("Break in non-loop scope",nil)
             else
                 text("    b .VOSLoopAfter"..currentLoop.."\n")
             end
@@ -441,7 +488,7 @@ return function(asmCode,astNodes)
                     end
                 end
             end
-            error("Unknown Variable: "..args[1].data.."!")
+            codgenErr("Unknown Variable: "..args[1].data.."!",args[1])
         end
     }
 
@@ -491,19 +538,16 @@ return function(asmCode,astNodes)
         end
     end)
 
-    local strCount = 0
+    forEach(astNodes,"externalFn",function(node)
+        for _,fn in ipairs(node.data.functions) do
+            definedFunc[fn] = true
+            functions[fn] = function(args,r) func(fn,args,r) end
+        end
+    end)
 
     forEach(astNodes,"function",function(node)
-        functions[node.data.name] = function(args,r)
-            -- Known Bug: Argument Registers are not preserved with nested function calls
-            for i,j in ipairs(args) do
-                getVal(args[i],"a"..(i-1))
-            end
-            text("    bl "..node.data.name.."\n")
-            if r ~= nil then
-                text("    add "..r..", a0, zero\n")
-            end
-        end
+        definedFunc[node.data.name] = true
+        functions[node.data.name] = function(args,r) func(node.data.name,args,r) end
     end)
 
     forEach(astNodes,"function",function(node)
