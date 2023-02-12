@@ -1,29 +1,37 @@
 return function(asmCode,astNodes)
     local sections = {"","","",""}
-    local function text(str)
-        sections[1] = sections[1] .. str
-    end
-    local function rodata(str)
-        sections[2] = sections[2] .. str
-    end
-    local function data(str)
-        sections[3] = sections[3] .. str
-    end
-    local function bss(str)
-        sections[4] = sections[4] .. str
-    end
-
     local definedFunc = {}
     local functions = {}
-    local allocated = {}
     local saved = {}
     local variables = {}
     local strCount = 1
     local loopCount = 1
     local ifCount = 1
     local currentLoop = -1
-    local seenTempWarn = false
     local nestedLevel = 0
+    local countSaved = false
+    local savedCount = -2
+
+    local function text(str)
+        if not countSaved then
+            sections[1] = sections[1] .. str
+        end
+    end
+    local function rodata(str)
+        if not countSaved then
+            sections[2] = sections[2] .. str
+        end
+    end
+    local function data(str)
+        if not countSaved then
+            sections[3] = sections[3] .. str
+        end
+    end
+    local function bss(str)
+        if not countSaved then
+            sections[4] = sections[4] .. str
+        end
+    end
 
     local function codgenErr(err,node)
         if node == nil then
@@ -36,31 +44,20 @@ return function(asmCode,astNodes)
     end
 
     local function ralloc()
-        for i=0,7 do
-            if not allocated["t"..i] then
-                allocated["t"..i] = true
-                return "t"..i
-            end
-        end
-        if not seenTempWarn then
-            io.stderr:write("\x1b[1;33mWarning: Saved Registers have been allocated, concider simplifying your code.\x1b[0m\n")
-            seenTempWarn = true
-        end
         for i=0,9 do
             if not saved["s"..i] then
+                if countSaved and (i+1) > savedCount then
+                    savedCount = i+1
+                end
                 saved["s"..i] = true
                 return "s"..i
             end
         end
-        codgenErr("All registers are depleated!")
+        codgenErr("Saved Registers are depleated!")
     end
 
     local function rfree(reg)
-        if reg:sub(1,1) == "s" then
-            saved[reg] = nil
-        else
-            allocated[reg] = nil
-        end
+        saved[reg] = nil
     end
 
     local func = function() end
@@ -91,7 +88,7 @@ return function(asmCode,astNodes)
             strCount = strCount + 1
         elseif arg.type == "symbol" then
             if variables[arg.data] then
-                text("    lw "..reg..", "..variables[arg.data].."(sp)\n")
+                text("    lw "..reg..", "..(variables[arg.data]+(savedCount*4)).."(sp)\n")
             else
                 for i,j in ipairs(curArgs) do
                     if j == arg.data then
@@ -475,7 +472,7 @@ return function(asmCode,astNodes)
                 local reg = ralloc()
                 getVal(args[2],reg)
                 rfree(reg)
-                text("    sw "..reg..", "..variables[args[1].data].."(sp)\n")
+                text("    sw "..reg..", "..(variables[args[1].data]+(savedCount*4)).."(sp)\n")
                 return
             else
                 for i,j in ipairs(curArgs) do
@@ -552,6 +549,7 @@ return function(asmCode,astNodes)
 
     forEach(astNodes,"function",function(node)
         curArgs = node.data.args
+        fnSaved = 0
         text(".global "..node.data.name..":\n")
         variables = {["_n"]=0}
         local argSize = #curArgs*4
@@ -564,20 +562,34 @@ return function(asmCode,astNodes)
             end
         end
         local varSize = variables["_n"]*4
-        text("    addi sp, sp, -"..(varSize+argSize+4).."\n")
+        variables["_n"] = nil
+        -- Get Saved Register Count
+        countSaved = true
+        for _,i in pairs(node.data.nodes) do
+            if i.data.name ~= "int" and i.data.name ~= "long" then
+                getVal(i,nil)
+            end
+        end
+        countSaved = false
+        text("    addi sp, sp, -"..(varSize+argSize+(savedCount*4)+4).."\n")
         text("    sw ra, 4(sp)\n")
         for i=1,#curArgs do
             text("    sw a"..(i-1)..", "..((i*4)+4).."(sp)\n")
         end
-        variables["_n"] = nil
+        for i=1,savedCount do
+            text("    sw s"..(i-1)..", "..((i*4)+4+argSize).."(sp)\n")
+        end
         for _,i in pairs(node.data.nodes) do
             if i.data.name ~= "int" and i.data.name ~= "long" then
                 getVal(i,nil)
             end
         end
         text(".ret:\n")
+        for i=1,savedCount do
+            text("    lw s"..(i-1)..", "..((i*4)+4+argSize).."(sp)\n")
+        end
         text("    lw ra, 4(sp)\n")
-        text("    addi sp, sp, "..(varSize+argSize+4).."\n")
+        text("    addi sp, sp, "..(varSize+argSize+(savedCount*4)+4).."\n")
         text("    blr zero, ra\n")
         allocated = {}
     end)
