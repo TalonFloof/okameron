@@ -80,7 +80,9 @@ return function(astNodes,wordSize,regCount)
             table.insert(bytes,0)
             rodata("VOSString"..strID,bytes)
             text("LoadAddr",{reg,"VOSString"..strID})
-            strCount = strCount + 1
+            if not countSaved then
+                strCount = strCount + 1
+            end
         elseif arg.type == "symbol" then
             if variables[arg.data] then
                 text("LoadStack",{reg,variables[arg.data]+(savedCount*wordSize)})
@@ -119,14 +121,14 @@ return function(astNodes,wordSize,regCount)
             getVal(j,"a"..(i-1))
         end
         if nestedLevel > 1 and #args > 0 then
-            text("AddImm",{"sp","sp",-(#args*wordSize)})
+            text("AddImm",{"sp",-(#args*wordSize)})
         end
         text("LinkedBranch",name)
         if r ~= nil then
-            text("AddReg",{r,"a0","zero"})
+            text("MovReg",{r,"a0"})
         end
         if nestedLevel > 1 and #args > 0 then
-            text("AddImm",{"sp","sp",(#args*wordSize)})
+            text("AddImm",{"sp",(#args*wordSize)})
             for i=1,#args do
                 text("LoadStack",{"a"..(i-1),((1-i)*wordSize)})
             end
@@ -143,7 +145,7 @@ return function(astNodes,wordSize,regCount)
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("AddReg",{reg,reg,argR})
+                    text("AddReg",{reg,argR})
                 end
             end
         end,
@@ -155,7 +157,7 @@ return function(astNodes,wordSize,regCount)
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("SubReg",{reg,reg,argR})
+                    text("SubReg",{reg,argR})
                 end
             end
         end,
@@ -167,7 +169,7 @@ return function(astNodes,wordSize,regCount)
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("Mult",{reg,reg,argR})
+                    text("Mul",{reg,argR})
                 end
             end
         end,
@@ -179,7 +181,7 @@ return function(astNodes,wordSize,regCount)
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("MultUnsign",{reg,reg,argR})
+                    text("MulUnsign",{reg,argR})
                 end
             end
         end,
@@ -191,7 +193,7 @@ return function(astNodes,wordSize,regCount)
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("Div",{reg,reg,argR})
+                    text("Div",{reg,argR})
                 end
             end
         end,
@@ -203,7 +205,7 @@ return function(astNodes,wordSize,regCount)
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("DivUnsign",{reg,reg,argR})
+                    text("DivUnsign",{reg,argR})
                 end
             end
         end,
@@ -215,7 +217,7 @@ return function(astNodes,wordSize,regCount)
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("Rem",{reg,reg,argR})
+                    text("Rem",{reg,argR})
                 end
             end
         end,
@@ -227,7 +229,7 @@ return function(astNodes,wordSize,regCount)
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("RemUnsign",{reg,reg,argR})
+                    text("RemUnsign",{reg,argR})
                 end
             end
         end,
@@ -243,7 +245,7 @@ return function(astNodes,wordSize,regCount)
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("AndReg",{reg,reg,argR})
+                    text("AndReg",{reg,argR})
                 end
             end
         end,
@@ -255,7 +257,7 @@ return function(astNodes,wordSize,regCount)
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("OrReg",{reg,reg,argR})
+                    text("OrReg",{reg,argR})
                 end
             end
         end,
@@ -267,7 +269,7 @@ return function(astNodes,wordSize,regCount)
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("XorReg",{reg,reg,argR})
+                    text("XorReg",{reg,argR})
                 end
             end
         end,
@@ -276,28 +278,28 @@ return function(astNodes,wordSize,regCount)
             local val = ralloc()
             getVal(args[2],val)
             rfree(val)
-            text("SllReg",{reg,reg,val})
+            text("SllReg",{reg,val})
         end,
         [">>"] = function(args,reg)
             getVal(args[1],reg)
             local val = ralloc()
             getVal(args[2],val)
             rfree(val)
-            text("SrlReg",{reg,reg,val})
+            text("SrlReg",{reg,val})
         end,
         ["s>>"] = function(args,reg)
             getVal(args[1],reg)
             local val = ralloc()
             getVal(args[2],val)
             rfree(val)
-            text("SraReg",{reg,reg,val})
+            text("SraReg",{reg,val})
         end,
         ["<"] = function(args,reg)
             getVal(args[1],reg)
             local r = ralloc()
             getVal(args[2],r)
             rfree(r)
-            text("SltReg",{reg,reg,r})
+            text("SltReg",{reg,r})
         end,
         ["u<"] = function(args,reg)
             getVal(args[1],reg)
@@ -325,14 +327,14 @@ return function(astNodes,wordSize,regCount)
             local r = ralloc()
             getVal(args[2],r)
             rfree(r)
-            text("EqualReg",{reg,reg,r})
+            text("EqualReg",{reg,r})
         end,
         ["!="] = function(args,reg)
             getVal(args[1],reg)
             local r = ralloc()
             getVal(args[2],r)
             rfree(r)
-            text("NotEqualReg",{reg,reg,r})
+            text("NotEqualReg",{reg,r})
         end,
         ["b!"] = function(args)
             local addr = ralloc()
@@ -395,7 +397,9 @@ return function(astNodes,wordSize,regCount)
             local previous = currentLoop
             local loopID = loopCount
             currentLoop = loopID
-            loopCount = loopCount + 1
+            if not countSaved then
+                loopCount = loopCount + 1
+            end
             text("LocalLabel",".VOSLoop"..loopID)
             local condition = ralloc()
             getVal(args[1],condition)
@@ -422,7 +426,9 @@ return function(astNodes,wordSize,regCount)
         end,
         ["if"] = function(args)
             local ifID = ifCount
-            ifCount = ifCount + 1
+            if not countSaved then
+                ifCount = ifCount + 1
+            end
             local ifs = #args // 2
             for i=1,ifs do
                 local condition = ralloc()
@@ -453,7 +459,7 @@ return function(astNodes,wordSize,regCount)
                 local reg = ralloc()
                 getVal(args[1],reg)
                 rfree(reg)
-                text("AddReg",{"a0","zero",reg})
+                text("MovReg",{"a0",reg})
             end
             text("Branch",".ret")
         end,
@@ -563,7 +569,7 @@ return function(astNodes,wordSize,regCount)
             end
         end
         countSaved = false
-        text("AddImm",{"sp","sp",-(varSize+argSize+(savedCount*wordSize)+wordSize)})
+        text("AddImm",{"sp",-(varSize+argSize+(savedCount*wordSize)+wordSize)})
         text("SaveRet",nil) -- Some architectures already have it in the stack so yeah
         for i=1,#curArgs do
             text("StoreStack",{"a"..(i-1),((i*wordSize)+wordSize)})
@@ -581,7 +587,7 @@ return function(astNodes,wordSize,regCount)
             text("LoadStack",{"s"..(i-1),((i*wordSize)+wordSize+argSize)})
         end
         text("LoadRet",nil)
-        text("AddImm",{"sp","sp",(varSize+argSize+(savedCount*wordSize)+wordSize)})
+        text("AddImm",{"sp",(varSize+argSize+(savedCount*wordSize)+wordSize)})
         text("Return",nil)
         allocated = {}
     end)
