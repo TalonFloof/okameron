@@ -299,7 +299,7 @@ return function(astNodes,wordSize,regCount)
             local r = ralloc()
             getVal(args[2],r)
             rfree(r)
-            text("SltReg",{reg,r})
+            text("SltReg",{reg,reg,r})
         end,
         ["u<"] = function(args,reg)
             getVal(args[1],reg)
