@@ -150,12 +150,12 @@ return function(asmCode,astNodes,sd)
             ins("    sra "..regConv[data[1]]..", "..regConv[data[2]].."\n")
         end,
         ["SltReg"] = function(data)
-            ins("    cmp "..regConv[data[1]]..", "..regConv[data[2]].."\n")
+            ins("    cmp "..regConv[data[2]]..", "..regConv[data[3]].."\n")
             ins("    iflt movz "..regConv[data[1]]..", 1\n")
             ins("    ifgteq movz "..regConv[data[1]]..", 0\n")
         end,
         ["SltUnReg"] = function(data)
-            ins("    cmp "..regConv[data[1]]..", "..regConv[data[2]].."\n")
+            ins("    cmp "..regConv[data[2]]..", "..regConv[data[3]].."\n")
             ins("    iflt movz "..regConv[data[1]]..", 1\n")
             ins("    ifgteq movz "..regConv[data[1]]..", 0\n")
         end,
