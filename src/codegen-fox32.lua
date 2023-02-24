@@ -197,15 +197,15 @@ return function(asmCode,astNodes,sd)
     end
 
     for _,i in ipairs(irCode[2]) do
-        ins(".global "..i["name"]..": ")
+        ins(i["name"]..": ")
         for _,j in ipairs(i["data"]) do
-            ins(".data.8 "..j.." ")
+            ins("data.8 "..j.." ")
         end
         ins("\n")
     end
 
     for _,i in ipairs(irCode[4]) do
-        ins(".global "..i["name"]..": .resb "..i["size"].."\n")
+        ins(i["name"]..": data.fill 0, "..i["size"].."\n")
     end
 
     return asmCode..final
