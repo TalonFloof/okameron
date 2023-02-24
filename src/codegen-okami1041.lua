@@ -116,10 +116,10 @@ return function(asmCode,astNodes,sd)
             ins("    sra "..data[1]..", "..data[1]..", "..data[2].."\n")
         end,
         ["SltReg"] = function(data)
-            ins("    slt "..data[1]..", "..data[1]..", "..data[2].."\n")
+            ins("    slt "..data[1]..", "..data[2]..", "..data[3].."\n")
         end,
         ["SltUnReg"] = function(data)
-            ins("    sltu "..data[1]..", "..data[1]..", "..data[2].."\n")
+            ins("    sltu "..data[1]..", "..data[2]..", "..data[3].."\n")
         end,
         ["EqualReg"] = function(data)
             ins("    sub "..data[1]..", "..data[1]..", "..data[2].."\n")
