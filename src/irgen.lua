@@ -575,7 +575,7 @@ return function(astNodes,wordSize,regCount)
             text("StoreStack",{"a"..(i-1),((i*wordSize)+wordSize)})
         end
         for i=1,savedCount do
-            text("StoreStack",{"a"..(i-1),((i*wordSize)+wordSize+argSize)})
+            text("StoreStack",{"s"..(i-1),((i*wordSize)+wordSize+argSize)})
         end
         for _,i in pairs(node.data.nodes) do
             if i.data.name ~= "int" then
