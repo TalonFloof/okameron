@@ -89,7 +89,7 @@ infile:close()
 
 local tokens = lexer(code)
 local astNodes = parser(tokens)
-local finalASM = codegen(asmCode,astNodes)
+local finalASM = codegen(asmCode,astNodes,sd)
 local outfile = io.open(args[2],"w")
 outfile:write(finalASM)
 outfile:close()

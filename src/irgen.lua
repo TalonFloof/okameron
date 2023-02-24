@@ -1,5 +1,5 @@
---[[return function(asmCode,astNodes)
-    local sections = {"","","",""}
+return function(astNodes,wordSize,regCount)
+    local sections = {{},{},{},{}}
     local definedFunc = {}
     local functions = {}
     local saved = {}
@@ -12,39 +12,39 @@
     local countSaved = false
     local savedCount = -2
 
-    local function text(str)
+    local function text(type,dat)
         if not countSaved then
-            sections[1] = sections[1] .. str
+            table.insert(sections[1],{["type"]=type,["data"]=dat})
         end
     end
-    local function rodata(str)
+    local function rodata(name,bytes)
         if not countSaved then
-            sections[2] = sections[2] .. str
+            table.insert(sections[2],{["name"]=name,["data"]=bytes})
         end
     end
     local function data(str)
         if not countSaved then
-            sections[3] = sections[3] .. str
+            irgenErr(".data segment not implemented!",nil)
+            --sections[3] = sections[3] .. str
         end
     end
-    local function bss(str)
+    local function bss(name,size)
         if not countSaved then
-            sections[4] = sections[4] .. str
+            table.insert(sections[4],{["name"]=name,["size"]=size})
         end
     end
 
-    local function codgenErr(err,node)
+    local function irgenErr(err,node)
         if node == nil then
-            io.stderr:write("\x1b[1;31mANONYMOUS CODEGEN ERROR - "..err.."\x1b[0m\n")
+            io.stderr:write("\x1b[1;31mANONYMOUS IRGEN ERROR - "..err.."\x1b[0m\n")
         else
-            print(serialize_list(node))
             io.stderr:write("\x1b[1;31m"..node.line..":"..node.col.." - "..err.."\x1b[0m\n")
         end
         os.exit(3)
     end
 
     local function ralloc()
-        for i=0,9 do
+        for i=0,(regCount-1) do
             if not saved["s"..i] then
                 if countSaved and (i+1) > savedCount then
                     savedCount = i+1
@@ -53,7 +53,7 @@
                 return "s"..i
             end
         end
-        codgenErr("Saved Registers are depleated!")
+        irgenErr("Registers are depleated!")
     end
 
     local function rfree(reg)
@@ -67,37 +67,32 @@
             if functions[arg.data.name] ~= nil then
                 functions[arg.data.name](arg.data.nodes,reg)
             else
-                codgenErr("Unknown Function: \""..arg.data.name.."\" (Hint: use externFn if its an assembly function)",arg)
+                irgenErr("Unknown Function: \""..arg.data.name.."\" (Hint: use externFn if its an assembly function)",arg)
             end
         elseif arg.type == "number" then
-            if (arg.data & 0xFFFF0000) == 0 then
-                text("    li "..reg..", "..(arg.data).."\n")
-            elseif (arg.data & 0xFFFF) == 0 then
-                text("    lui "..reg..", "..(arg.data >> 16).."\n")
-            else
-                text("    la "..reg..", "..arg.data.."\n")
-            end
+            text("LoadImm",{reg,arg.data})
         elseif arg.type == "string" then
             local strID = strCount
-            rodata("VOSString"..strID..": ")
+            local bytes = {}
             for i=1,#arg.data do
-                rodata(".byte "..string.byte(string.sub(arg.data,i,i)).." ")
+                table.insert(bytes,string.byte(string.sub(arg.data,i,i)))
             end
-            rodata(".byte 0\n")
-            text("    la "..reg..", VOSString"..strID.."\n")
+            table.insert(bytes,0)
+            rodata("VOSString"..strID,bytes)
+            text("LoadAddr",{reg,"VOSString"..strID})
             strCount = strCount + 1
         elseif arg.type == "symbol" then
             if variables[arg.data] then
-                text("    lw "..reg..", "..(variables[arg.data]+(savedCount*4)).."(sp)\n")
+                text("LoadStack",{reg,variables[arg.data]+(savedCount*wordSize)})
             else
                 for i,j in ipairs(curArgs) do
                     if j == arg.data then
-                        text("    lw "..reg..", "..((i*4)+4).."(sp)\n")
+                        text("LoadStack",{reg,((i*wordSize)+wordSize)})
                     end
                 end
             end
         end
-    end]]
+    end
 
     --[[local function hasNestedFunc(args)
         for _,node in ipairs(args) do
@@ -111,29 +106,29 @@
         end
         return false
     end]]
---[[
+
     func = function(name,args,r)
         nestedLevel = nestedLevel + 1
         if nestedLevel > 1 and #args > 0 then
             -- print("WARNING!!! Call \""..name.."\" has a nested function. This is currently broken, so proceed with caution...")
             for i=1,#args do
-                text("    sw a"..(i-1)..", "..((1-i)*4).."(sp)\n")
+                text("SaveStack",{"a"..(i-1),((1-i)*wordSize)})
             end
         end
         for i,j in ipairs(args) do
             getVal(j,"a"..(i-1))
         end
         if nestedLevel > 1 and #args > 0 then
-            text("    addi sp, sp, -"..(#args*4).."\n")
+            text("AddImm",{"sp","sp",-(#args*wordSize)})
         end
-        text("    bl "..name.."\n")
+        text("LinkedBranch",name)
         if r ~= nil then
-            text("    add "..r..", a0, zero\n")
+            text("AddReg",{r,"a0","zero"})
         end
         if nestedLevel > 1 and #args > 0 then
-            text("    addi sp, sp, "..(#args*4).."\n")
+            text("AddImm",{"sp","sp",(#args*wordSize)})
             for i=1,#args do
-                text("    lw a"..(i-1)..", "..((1-i)*4).."(sp)\n")
+                text("LoadStack",{"a"..(i-1),((1-i)*wordSize)})
             end
         end
         nestedLevel = nestedLevel - 1
@@ -148,7 +143,7 @@
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("    add "..reg..", "..reg..", "..argR.."\n")
+                    text("AddReg",{reg,reg,argR})
                 end
             end
         end,
@@ -160,7 +155,7 @@
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("    sub "..reg..", "..reg..", "..argR.."\n")
+                    text("SubReg",{reg,reg,argR})
                 end
             end
         end,
@@ -172,7 +167,7 @@
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("    mul "..reg..", zero, "..reg..", "..argR.."\n")
+                    text("Mult",{reg,reg,argR})
                 end
             end
         end,
@@ -184,7 +179,7 @@
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("    mulu "..reg..", zero, "..reg..", "..argR.."\n")
+                    text("MultUnsign",{reg,reg,argR})
                 end
             end
         end,
@@ -196,7 +191,7 @@
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("    div "..reg..", zero, "..reg..", "..argR.."\n")
+                    text("Div",{reg,reg,argR})
                 end
             end
         end,
@@ -208,7 +203,7 @@
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("    divu "..reg..", zero, "..reg..", "..argR.."\n")
+                    text("DivUnsign",{reg,reg,argR})
                 end
             end
         end,
@@ -220,7 +215,7 @@
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("    div zero, "..reg..", "..reg..", "..argR.."\n")
+                    text("Rem",{reg,reg,argR})
                 end
             end
         end,
@@ -232,16 +227,13 @@
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("    divu zero, "..reg..", "..reg..", "..argR.."\n")
+                    text("RemUnsign",{reg,reg,argR})
                 end
             end
         end,
         ["!"] = function(args,reg)
             getVal(args[1],reg)
-            local temp = ralloc()
-            rfree(temp)
-            text("    addi "..temp..", zero, -1\n")
-            text("    xor "..reg..", "..reg..", "..temp.."\n")
+            text("NotReg",reg)
         end,
         ["&"] = function(args,reg)
             for i,arg in ipairs(args) do
@@ -251,7 +243,7 @@
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("    and "..reg..", "..reg..", "..argR.."\n")
+                    text("AndReg",{reg,reg,argR})
                 end
             end
         end,
@@ -263,7 +255,7 @@
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("    or "..reg..", "..reg..", "..argR.."\n")
+                    text("OrReg",{reg,reg,argR})
                 end
             end
         end,
@@ -275,7 +267,7 @@
                     local argR = ralloc()
                     getVal(arg,argR)
                     rfree(argR)
-                    text("    xor "..reg..", "..reg..", "..argR.."\n")
+                    text("XorReg",{reg,reg,argR})
                 end
             end
         end,
@@ -284,65 +276,63 @@
             local val = ralloc()
             getVal(args[2],val)
             rfree(val)
-            text("    sll "..reg..", "..reg..", "..val.."\n")
+            text("SllReg",{reg,reg,val})
         end,
         [">>"] = function(args,reg)
             getVal(args[1],reg)
             local val = ralloc()
             getVal(args[2],val)
             rfree(val)
-            text("    srl "..reg..", "..reg..", "..val.."\n")
+            text("SrlReg",{reg,reg,val})
         end,
         ["s>>"] = function(args,reg)
             getVal(args[1],reg)
             local val = ralloc()
             getVal(args[2],val)
             rfree(val)
-            text("    sra "..reg..", "..reg..", "..val.."\n")
+            text("SraReg",{reg,reg,val})
         end,
         ["<"] = function(args,reg)
             getVal(args[1],reg)
             local r = ralloc()
             getVal(args[2],r)
             rfree(r)
-            text("    slt "..reg..", "..reg..", "..r.."\n")
+            text("SltReg",{reg,reg,r})
         end,
         ["u<"] = function(args,reg)
             getVal(args[1],reg)
             local r = ralloc()
             getVal(args[2],r)
             rfree(r)
-            text("    sltu "..reg..", "..reg..", "..r.."\n")
+            text("SltUnReg",{reg,reg,r})
         end,
         [">"] = function(args,reg)
             getVal(args[1],reg)
             local r = ralloc()
             getVal(args[2],r)
             rfree(r)
-            text("    slt "..reg..", "..r..", "..reg.."\n")
+            text("SltReg",{reg,r,reg})
         end,
         ["u>"] = function(args,reg)
             getVal(args[1],reg)
             local r = ralloc()
             getVal(args[2],r)
             rfree(r)
-            text("    sltu "..reg..", "..r..", "..reg.."\n")
+            text("SltUnReg",{reg,r,reg})
         end,
         ["=="] = function(args,reg)
             getVal(args[1],reg)
             local r = ralloc()
             getVal(args[2],r)
             rfree(r)
-            text("    sub "..reg..", "..reg..", "..r.."\n")
-            text("    sltiu "..reg..", "..reg..", 1\n")
+            text("EqualReg",{reg,reg,r})
         end,
         ["!="] = function(args,reg)
             getVal(args[1],reg)
             local r = ralloc()
             getVal(args[2],r)
             rfree(r)
-            text("    sub "..reg..", "..reg..", "..r.."\n")
-            text("    sltu "..reg..", zero, "..reg.."\n")
+            text("NotEqualReg",{reg,reg,r})
         end,
         ["b!"] = function(args)
             local addr = ralloc()
@@ -351,19 +341,19 @@
             getVal(args[2],val)
             rfree(addr)
             rfree(val)
-            text("    sb "..val..", 0("..addr..")\n")
+            text("StoreByte",{val,addr})
         end,
         ["b@"] = function(args,reg)
             local addr = ralloc()
             getVal(args[1],addr)
             rfree(addr)
-            text("    lbu "..reg..", 0("..addr..")\n")
+            text("LoadByte",{reg,addr})
         end,
         ["sb@"] = function(args,reg)
             local addr = ralloc()
             getVal(args[1],addr)
             rfree(addr)
-            text("    lb "..reg..", 0("..addr..")\n")
+            text("LoadByteSigned",{reg,addr})
         end,
         ["h!"] = function(args)
             local addr = ralloc()
@@ -372,19 +362,19 @@
             getVal(args[2],val)
             rfree(addr)
             rfree(val)
-            text("    sh "..val..", 0("..addr..")\n")
+            text("StoreHalf",{val,addr})
         end,
         ["h@"] = function(args,reg)
             local addr = ralloc()
             getVal(args[1],addr)
             rfree(addr)
-            text("    lhu "..reg..", 0("..addr..")\n")
+            text("LoadHalf",{reg,addr})
         end,
         ["sh@"] = function(args,reg)
             local addr = ralloc()
             getVal(args[1],addr)
             rfree(addr)
-            text("    lh "..reg..", 0("..addr..")\n")
+            text("LoadHalfSigned",{reg,addr})
         end,
         ["w!"] = function(args)
             local addr = ralloc()
@@ -393,36 +383,36 @@
             getVal(args[2],val)
             rfree(addr)
             rfree(val)
-            text("    sw "..val..", 0("..addr..")\n")
+            text("StoreWord",{val,addr})
         end,
         ["w@"] = function(args,reg)
             local addr = ralloc()
             getVal(args[1],addr)
             rfree(addr)
-            text("    lw "..reg..", 0("..addr..")\n")
+            text("LoadWord",{reg,addr})
         end,
         ["while"] = function(args)
             local previous = currentLoop
             local loopID = loopCount
             currentLoop = loopID
             loopCount = loopCount + 1
-            text(".VOSLoop"..loopID..":\n")
+            text("LocalLabel",".VOSLoop"..loopID)
             local condition = ralloc()
             getVal(args[1],condition)
-            text("    beq "..condition..", zero, .VOSLoopAfter"..loopID.."\n")
+            text("BranchIfZero",{condition,".VOSLoopAfter"..loopID})
             rfree(condition)
             for index=2,#args do
                 getVal(args[index],nil)
             end
-            text("    b .VOSLoop"..loopID.."\n")
-            text(".VOSLoopAfter"..loopID..":\n")
+            text("Branch",".VOSLoop"..loopID)
+            text("LocalLabel",".VOSLoopAfter"..loopID)
             currentLoop = previous
         end,
         ["break"] = function(args)
             if currentLoop == -1 then
-                codgenErr("Break in non-loop scope",nil)
+                irgenErr("Break in non-loop scope",nil)
             else
-                text("    b .VOSLoopAfter"..currentLoop.."\n")
+                text("Branch",".VOSLoopAfter"..currentLoop)
             end
         end,
         ["do"] = function(args)
@@ -437,42 +427,42 @@
             for i=1,ifs do
                 local condition = ralloc()
                 getVal(args[i],condition)
-                text("    bne "..condition..", zero, .VOSIf"..ifID.."_"..i.."\n")
+                text("BranchNotZero",{condition,".VOSIf"..ifID.."_"..i})
                 rfree(condition)
             end
             if (ifs*2) ~= #args then
-                text("    b .VOSIfElse"..ifID.."\n")
+                text("Branch",".VOSIfElse"..ifID)
             else
-                text("    b .VOSIfAfter"..ifID.."\n")
+                text("Branch",".VOSIfAfter"..ifID)
             end
             for i=1,ifs do
-                text(".VOSIf"..ifID.."_"..i..":\n")
+                text("LocalLabel",".VOSIf"..ifID.."_"..i)
                 getVal(args[i*2],nil)
                 if ifs > 1 or ((ifs*2) ~= #args) then
-                    text("b .VOSIfAfter"..ifID.."\n")
+                    text("Branch",".VOSIfAfter"..ifID)
                 end
             end
             if (ifs*2) ~= #args then -- If this is true, than there's an else statement
-                text(".VOSIfElse"..ifID..":\n")
+                text("LocalLabel",".VOSIfElse"..ifID)
                 getVal(args[#args],nil)
             end
-            text(".VOSIfAfter"..ifID..":\n")
+            text("LocalLabel",".VOSIfAfter"..ifID)
         end,
         ["return"] = function(args)
             if args[1] ~= nil then
                 local reg = ralloc()
                 getVal(args[1],reg)
                 rfree(reg)
-                text("    add a0, zero, "..reg.."\n")
+                text("AddReg",{"a0","zero",reg})
             end
-            text("    b .ret\n")
+            text("Branch",".ret")
         end,
         ["="] = function(args)
             if variables[args[1].data] ~= nil then
                 local reg = ralloc()
                 getVal(args[2],reg)
                 rfree(reg)
-                text("    sw "..reg..", "..(variables[args[1].data]+(savedCount*4)).."(sp)\n")
+                text("StoreStack",{reg,(variables[args[1].data]+(savedCount*wordSize))})
                 return
             else
                 for i,j in ipairs(curArgs) do
@@ -480,12 +470,12 @@
                         local reg = ralloc()
                         getVal(args[2],reg)
                         rfree(reg)
-                        text("    sw "..reg..", "..((i*4)+4).."(sp)\n")
+                        text("StoreStack",{reg,((i*wordSize)+wordSize)})
                         return
                     end
                 end
             end
-            codgenErr("Unknown Variable: "..args[1].data.."!",args[1])
+            irgenErr("Unknown Variable: "..args[1].data.."!",args[1])
         end
     }
 
@@ -498,40 +488,42 @@
     end
 
     forEach(astNodes,"globalVar",function(node)
-        bss(node.data.name..": .resb "..node.data.size.."\n")
+        bss(node.data.name,node.data.size)
         functions[node.data.name] = function(args,r)
-            text("    la "..r..", "..node.data.name.."\n")
+            text("LoadAddr",{r,node.data.name})
         end
     end)
 
     forEach(astNodes,"struct",function(node)
         for i,j in ipairs(node.data.entries) do
             functions[node.data.name.."."..j.name] = function(args,r)
-                text("    li "..r..", "..j.offset.."\n")
+                text("LoadImm",{r,j.offset})
             end
         end
     end)
 
     forEach(astNodes,"constant",function(node)
         functions[node.data.name] = function(args,r)
-            text("    la "..r..", "..node.data.val.."\n")
+            text("LoadAddr",{r,node.data.val})
         end
     end)
 
     forEach(astNodes,"external",function(node)
         functions[node.data.name] = function(args,r)
-            text("    la "..r..", "..node.data.name.."\n")
+            text("LoadAddr",{r,node.data.name})
         end
     end)
     
     forEach(astNodes,"constantString",function(node)
         rodata(node.data.name..": ")
+        local bytes = {}
         for i=1,#node.data.val do
-            rodata(".byte "..string.byte(string.sub(node.data.val,i,i)).." ")
+            table.insert(bytes,string.byte(string.sub(node.data.val,i,i)))
         end
-        rodata(".byte 0\n")
+        table.insert(bytes,0)
+        rodata(node.data.name,bytes)
         functions[node.data.name] = function(args,r)
-            text("    la "..r..", "..node.data.name.."\n")
+            text("LoadAddr",{r,node.data.name})
         end
     end)
 
@@ -550,18 +542,18 @@
     forEach(astNodes,"function",function(node)
         curArgs = node.data.args
         fnSaved = 0
-        text(".global "..node.data.name..":\n")
+        text("FunctionLabel",node.data.name)
         variables = {["_n"]=0}
-        local argSize = #curArgs*4
+        local argSize = #curArgs*wordSize
         for _,i in ipairs(node.data.nodes) do
             if i.data.name == "int" then
                 for _,varName in ipairs(i.data.nodes) do
-                    variables[varName.data] = (variables["_n"]*4)+(argSize+8)
+                    variables[varName.data] = (variables["_n"]*wordSize)+(argSize+(wordSize*2))
                     variables["_n"] = variables["_n"] + 1
                 end
             end
         end
-        local varSize = variables["_n"]*4
+        local varSize = variables["_n"]*wordSize
         variables["_n"] = nil
         -- Get Saved Register Count
         countSaved = true
@@ -571,107 +563,28 @@
             end
         end
         countSaved = false
-        text("    addi sp, sp, -"..(varSize+argSize+(savedCount*4)+4).."\n")
-        text("    sw ra, 4(sp)\n")
+        text("AddImm",{"sp","sp",-(varSize+argSize+(savedCount*wordSize)+wordSize)})
+        text("SaveRet",nil) -- Some architectures already have it in the stack so yeah
         for i=1,#curArgs do
-            text("    sw a"..(i-1)..", "..((i*4)+4).."(sp)\n")
+            text("StoreStack",{"a"..(i-1),((i*wordSize)+wordSize)})
         end
         for i=1,savedCount do
-            text("    sw s"..(i-1)..", "..((i*4)+4+argSize).."(sp)\n")
+            text("StoreStack",{"a"..(i-1),((i*wordSize)+wordSize+argSize)})
         end
         for _,i in pairs(node.data.nodes) do
             if i.data.name ~= "int" then
                 getVal(i,nil)
             end
         end
-        text(".ret:\n")
+        text("LocalLabel",".ret")
         for i=1,savedCount do
-            text("    lw s"..(i-1)..", "..((i*4)+4+argSize).."(sp)\n")
+            text("LoadStack",{"s"..(i-1),((i*wordSize)+wordSize+argSize)})
         end
-        text("    lw ra, 4(sp)\n")
-        text("    addi sp, sp, "..(varSize+argSize+(savedCount*4)+4).."\n")
-        text("    blr zero, ra\n")
+        text("LoadRet",nil)
+        text("AddImm",{"sp","sp",(varSize+argSize+(savedCount*wordSize)+wordSize)})
+        text("Return",nil)
         allocated = {}
     end)
 
-    return asmCode..".text\n"..sections[1].."\n.rodata\n"..sections[2].."\n.data\n"..sections[3].."\n.bss\n"..sections[4]
-end]]
-
-return function(asmCode,astNodes,sd)
-    local irgen = dofile(sd.."irgen.lua")
-    local irCode = irgen(astNodes,4,10)
-
-    local final = ".text\n"
-
-    local function ins(data)
-        final = final .. data
-    end
-
-    for _,i in ipairs(irCode[1]) do
-        io.stderr:write(i["type"])
-        if type(i["data"]) == "table" then
-            io.stderr:write(" "..table.concat(i["data"],", "))
-        elseif i["data"] == nil then
-            -- Do Nothing
-        else
-            io.stderr:write(" "..tostring(i["data"]))
-        end
-        io.stderr:write("\n")
-    end
-
-    local ops = {
-        ["FunctionLabel"] = function(data)
-            ins(".global "..data..":\n")
-        end,
-        ["LocalLabel"] = function(data)
-            ins(data..":\n")
-        end,
-        ["SaveRet"] = function(data)
-            ins("    sw ra, 4(sp)\n")
-        end,
-        ["LoadRet"] = function(data)
-            ins("    lw ra, 4(sp)\n")
-        end,
-        ["StoreStack"] = function(data)
-            ins("    sw "..data[1]..", "..data[2].."(sp)\n")
-        end,
-        ["LoadStack"] = function(data)
-            ins("    lw "..data[1]..", "..data[2].."(sp)\n")
-        end,
-        ["LoadImm"] = function(data)
-            if (data[2] & 0xFFFF) == 0 then
-                ins("    lui "..data[1]..", "..(data[2] >> 16))
-            elseif (data[2] & 0xFFFF0000) == 0 then
-                ins("    li "..data[1]..", "..data[2])
-            else
-                ins("    la "..data[1]..", "..data[2])
-            end
-        end,
-        ["AddReg"] = function(data)
-            ins("    add "..data[1]..", "..data[2]..", "..data[3].."\n")
-        end,
-        ["SubReg"] = function(data)
-            ins("    sub "..data[1]..", "..data[2]..", "..data[3].."\n")
-        end,
-        ["NotReg"] = function(data)
-            ins("    addi t7, zero, -1\n")
-            ins("    xor "..data..", "..data..", t7\n")
-        end,
-        ["AndReg"] = function(data)
-            ins("    and "..data[1]..", "..data[2]..", "..data[3].."\n")
-        end,
-        ["AddImm"] = function(data)
-            ins("    addi "..data[1]..", "..data[2]..", "..data[3].."\n")
-        end,
-    }
-
-    for _,i in ipairs(irCode[1]) do
-        if ops[i["type"]] then
-            ops[i["type"]](i["data"])
-        else
-            error("Unknown IR Opcode "..i["type"].."!")
-        end
-    end
-
-    return ""
+    return sections
 end
