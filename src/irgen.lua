@@ -114,7 +114,7 @@ return function(astNodes,wordSize,regCount)
         if nestedLevel > 1 and #args > 0 then
             -- print("WARNING!!! Call \""..name.."\" has a nested function. This is currently broken, so proceed with caution...")
             for i=1,#args do
-                text("SaveStack",{"a"..(i-1),((1-i)*wordSize)})
+                text("StoreStack",{"a"..(i-1),((1-i)*wordSize)})
             end
         end
         for i,j in ipairs(args) do
