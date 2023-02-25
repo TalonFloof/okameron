@@ -432,7 +432,7 @@ return function(astNodes,wordSize,regCount)
             local ifs = #args // 2
             for i=1,ifs do
                 local condition = ralloc()
-                getVal(args[i],condition)
+                getVal(args[((i-1)*2)+1],condition)
                 text("BranchNotZero",{condition,".VOSIf"..ifID.."_"..i})
                 rfree(condition)
             end

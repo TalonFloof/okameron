@@ -130,10 +130,11 @@ local function parse(tokens)
                     cursor = cursor + 1
                     expectToken("identifier")
                     cursor = cursor + 1
-                    table.insert(args,{name=tokens[cursor-1].txt,offset=offset})
+                    table.insert(vals,{name=tokens[cursor-1].txt,offset=offset})
                     offset = offset + num
                 end
-                addNode("struct",{name=tokens[cursor-3].txt,entries=vals})
+                addNode("struct",{name=name,entries=vals})
+                cursor = cursor + 1
             else
                 parserError("Unknown keyword \""..tokens[cursor].type.."\" in global scope")
             end
