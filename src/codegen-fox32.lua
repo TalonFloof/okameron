@@ -178,14 +178,14 @@ return function(asmCode,astNodes,sd)
             end
         end,
         ["Branch"] = function(data)
-            if data:sub(1) == "." then
+            if data:sub(1,1) == "." then
                 ins("    jmp "..curFunc.."_"..data:sub(2).."\n")
             else
                 ins("    jmp "..data.."\n")
             end
         end,
         ["LinkedBranch"] = function(data)
-            if data:sub(1) == "." then
+            if data:sub(1,1) == "." then
                 ins("    call "..curFunc.."_"..data:sub(2).."\n")
             else
                 ins("    call "..data.."\n")
@@ -193,7 +193,7 @@ return function(asmCode,astNodes,sd)
         end,
         ["BranchIfZero"] = function(data)
             ins("    cmp.32 "..regConv[data[1]]..", 0".."\n")
-            if data:sub(1) == "." then
+            if data[2]:sub(1,1) == "." then
                 ins("    ifz rjmp "..curFunc.."_"..data[2]:sub(2).."\n")
             else
                 ins("    ifz rjmp "..data[2].."\n")
@@ -201,7 +201,7 @@ return function(asmCode,astNodes,sd)
         end,
         ["BranchNotZero"] = function(data)
             ins("    cmp.32 "..regConv[data[1]]..", 0".."\n")
-            if data:sub(1) == "." then
+            if data[2]:sub(1,1) == "." then
                 ins("    ifnz rjmp "..curFunc.."_"..data[2]:sub(2).."\n")
             else
                 ins("    ifnz rjmp "..data[2].."\n")
