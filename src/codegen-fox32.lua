@@ -194,17 +194,17 @@ return function(asmCode,astNodes,sd)
         ["BranchIfZero"] = function(data)
             ins("    cmp.32 "..regConv[data[1]]..", 0".."\n")
             if data[2]:sub(1,1) == "." then
-                ins("    ifz rjmp "..curFunc.."_"..data[2]:sub(2).."\n")
+                ins("    ifz jmp "..curFunc.."_"..data[2]:sub(2).."\n")
             else
-                ins("    ifz rjmp "..data[2].."\n")
+                ins("    ifz jmp "..data[2].."\n")
             end
         end,
         ["BranchNotZero"] = function(data)
             ins("    cmp.32 "..regConv[data[1]]..", 0".."\n")
             if data[2]:sub(1,1) == "." then
-                ins("    ifnz rjmp "..curFunc.."_"..data[2]:sub(2).."\n")
+                ins("    ifnz jmp "..curFunc.."_"..data[2]:sub(2).."\n")
             else
-                ins("    ifnz rjmp "..data[2].."\n")
+                ins("    ifnz jmp "..data[2].."\n")
             end
         end,
     }
