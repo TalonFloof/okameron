@@ -38,6 +38,7 @@ return function(asmCode,astNodes,sd)
         ["s21"] = "r29",
         ["s22"] = "r30",
         ["s23"] = "r31",
+        ["sp"] = "rsp",
     }
 
     local function ins(data)
@@ -47,10 +48,10 @@ return function(asmCode,astNodes,sd)
     local ops = {
         ["FunctionLabel"] = function(data)
             curFunc = data
-            ins(""..data..":\n")
+            ins(data..":\n")
         end,
         ["LocalLabel"] = function(data)
-            ins(curFunc..data..":\n")
+            ins(curFunc.."_"..data:sub(2)..":\n")
         end,
         ["SaveRet"] = function(data)
             -- This is pushed to the stack so yeah...
@@ -170,21 +171,41 @@ return function(asmCode,astNodes,sd)
             ins("    ifnz movz "..regConv[data[1]]..", 1\n")
         end,
         ["AddImm"] = function(data)
-            ins("    add.32 "..regConv[data[1]]..", "..data[2].."\n")
+            if data[2] < 0 then
+                ins("    sub.32 "..regConv[data[1]]..", "..math.abs(data[2]).."\n")
+            else
+                ins("    add.32 "..regConv[data[1]]..", "..data[2].."\n")
+            end
         end,
         ["Branch"] = function(data)
-            ins("    jmp "..data.."\n")
+            if data:sub(1) == "." then
+                ins("    jmp "..curFunc.."_"..data:sub(2).."\n")
+            else
+                ins("    jmp "..data.."\n")
+            end
         end,
         ["LinkedBranch"] = function(data)
-            ins("    call "..data.."\n")
+            if data:sub(1) == "." then
+                ins("    call "..curFunc.."_"..data:sub(2).."\n")
+            else
+                ins("    call "..data.."\n")
+            end
         end,
         ["BranchIfZero"] = function(data)
             ins("    cmp.32 "..regConv[data[1]]..", 0".."\n")
-            ins("    ifz rjmp "..data[2].."\n")
+            if data:sub(1) == "." then
+                ins("    ifz rjmp "..curFunc.."_"..data[2]:sub(2).."\n")
+            else
+                ins("    ifz rjmp "..data[2].."\n")
+            end
         end,
         ["BranchNotZero"] = function(data)
             ins("    cmp.32 "..regConv[data[1]]..", 0".."\n")
-            ins("    ifnz rjmp "..data[2].."\n")
+            if data:sub(1) == "." then
+                ins("    ifnz rjmp "..curFunc.."_"..data[2]:sub(2).."\n")
+            else
+                ins("    ifnz rjmp "..data[2].."\n")
+            end
         end,
     }
 
