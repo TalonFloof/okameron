@@ -4,7 +4,9 @@ return function(astNodes,wordSize,regCount)
     local functions = {}
     local saved = {}
     local variables = {}
+    local globalVars = {}
     local strCount = 1
+    local strings = {}
     local loopCount = 1
     local ifCount = 1
     local currentLoop = -1
@@ -22,10 +24,9 @@ return function(astNodes,wordSize,regCount)
             table.insert(sections[2],{["name"]=name,["data"]=bytes})
         end
     end
-    local function data(str)
+    local function data(name,val)
         if not countSaved then
-            irgenErr(".data segment not implemented!",nil)
-            --sections[3] = sections[3] .. str
+            table.insert(sections[3],{["name"]=name,["data"]=val})
         end
     end
     local function bss(name,size)
@@ -72,18 +73,28 @@ return function(astNodes,wordSize,regCount)
         elseif arg.type == "number" then
             text("LoadImm",{reg,arg.data})
         elseif arg.type == "string" then
-            local strID = strCount
-            local bytes = {}
-            for i=1,#arg.data do
-                table.insert(bytes,string.byte(string.sub(arg.data,i,i)))
-            end
-            table.insert(bytes,0)
-            rodata("VOSString"..strID,bytes)
-            text("LoadAddr",{reg,"VOSString"..strID})
-            if not countSaved then
-                strCount = strCount + 1
+            if strings[arg.data] ~= nil then
+                text("LoadAddr",{reg,"VOSString"..strings[arg.data]})
+            else
+                local strID = strCount
+                if not countSaved then
+                    strings[arg.data] = strID
+                end
+                local bytes = {}
+                for i=1,#arg.data do
+                    table.insert(bytes,string.byte(string.sub(arg.data,i,i)))
+                end
+                table.insert(bytes,0)
+                rodata("VOSString"..strID,bytes)
+                text("LoadAddr",{reg,"VOSString"..strID})
+                if not countSaved then
+                    strCount = strCount + 1
+                end
             end
         elseif arg.type == "symbol" then
+            if globalVars[arg.data] then
+                text("LoadAddr",{reg,arg.data})
+            end
             if variables[arg.data] then
                 text("LoadStack",{reg,variables[arg.data]+(savedCount*wordSize)})
             else
@@ -308,6 +319,22 @@ return function(astNodes,wordSize,regCount)
             rfree(r)
             text("SltUnReg",{reg,reg,r})
         end,
+        ["<="] = function(args,reg)
+            getVal(args[1],reg)
+            local r = ralloc()
+            getVal(args[2],r)
+            rfree(r)
+            text("SltReg",{reg,r,reg})
+            text("XorImm",{reg,1})
+        end,
+        ["u<="] = function(args,reg)
+            getVal(args[1],reg)
+            local r = ralloc()
+            getVal(args[2],r)
+            rfree(r)
+            text("SltUnReg",{reg,r,reg})
+            text("XorImm",{reg,1})
+        end,
         [">"] = function(args,reg)
             getVal(args[1],reg)
             local r = ralloc()
@@ -321,6 +348,22 @@ return function(astNodes,wordSize,regCount)
             getVal(args[2],r)
             rfree(r)
             text("SltUnReg",{reg,r,reg})
+        end,
+        [">="] = function(args,reg)
+            getVal(args[1],reg)
+            local r = ralloc()
+            getVal(args[2],r)
+            rfree(r)
+            text("SltReg",{reg,reg,r})
+            text("XorImm",{reg,1})
+        end,
+        ["u>="] = function(args,reg)
+            getVal(args[1],reg)
+            local r = ralloc()
+            getVal(args[2],r)
+            rfree(r)
+            text("SltUnReg",{reg,reg,r})
+            text("XorImm",{reg,1})
         end,
         ["=="] = function(args,reg)
             getVal(args[1],reg)
@@ -498,6 +541,11 @@ return function(astNodes,wordSize,regCount)
         functions[node.data.name] = function(args,r)
             text("LoadAddr",{r,node.data.name})
         end
+    end)
+
+    forEach(astNodes,"globalWordVar",function(node)
+        data(node.data.name,node.data.data)
+        globalVars[node.data.name] = true;
     end)
 
     forEach(astNodes,"struct",function(node)

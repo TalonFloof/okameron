@@ -177,6 +177,9 @@ return function(asmCode,astNodes,sd)
                 ins("    add.32 "..regConv[data[1]]..", "..data[2].."\n")
             end
         end,
+        ["XorImm"] = function(data)
+            ins("    xor "..regConv[data[1]]..", "..data[2].."\n")
+        end,
         ["Branch"] = function(data)
             if data:sub(1,1) == "." then
                 ins("    jmp "..curFunc.."_"..data:sub(2).."\n")
@@ -223,6 +226,10 @@ return function(asmCode,astNodes,sd)
             ins("data.8 "..j.." ")
         end
         ins("\n")
+    end
+
+    for _,i in ipairs(irCode[3]) do
+        ins(i["name"]..": data.32 "..i["data"].."\n")
     end
 
     for _,i in ipairs(irCode[4]) do

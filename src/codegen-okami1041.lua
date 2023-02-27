@@ -132,6 +132,9 @@ return function(asmCode,astNodes,sd)
         ["AddImm"] = function(data)
             ins("    addi "..data[1]..", "..data[1]..", "..data[2].."\n")
         end,
+        ["XorImm"] = function(data)
+            ins("    xori "..data[1]..", "..data[1]..", "..data[2].."\n")
+        end,
         ["Branch"] = function(data)
             ins("    b "..data.."\n")
         end,
@@ -164,10 +167,27 @@ return function(asmCode,astNodes,sd)
         ins("\n")
     end
 
+    ins(".data\n")
+
+    for _,i in ipairs(irCode[3]) do
+        ins(".global "..i["name"]..": .word "..i["data"].."\n")
+    end
+
     ins(".bss\n")
 
     for _,i in ipairs(irCode[4]) do
-        ins(".global "..i["name"]..": .resb "..i["size"].."\n")
+        if i["size"] == 1 then
+            ins(".align 4\n")
+        elseif i["size"] >= 2 and i["size"] <= 3 then
+            ins(".align 4\n")
+        elseif i["size"] >= 4 then
+            ins(".align 4\n")
+        end
+        if i["size"] == 0 then
+            ins(".global "..i["name"]..":\n")
+        else
+            ins(".global "..i["name"]..": .resb "..i["size"].."\n")
+        end
     end
 
     return asmCode..final

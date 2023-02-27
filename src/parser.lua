@@ -108,6 +108,15 @@ local function parse(tokens)
                 expectToken("endCall")
                 cursor = cursor + 1
                 addNode("globalVar",{name=tokens[cursor-3].txt,size=parseImm(tokens[cursor-2].txt)})
+            elseif name == "int" then
+                cursor = cursor + 1
+                expectToken("identifier")
+                cursor = cursor + 1
+                expectToken("number")
+                cursor = cursor + 1
+                expectToken("endCall")
+                cursor = cursor + 1
+                addNode("globalWordVar",{name=tokens[cursor-3].txt,num=parseImm(tokens[cursor-2].txt)})
             elseif name == "constStr" then
                 cursor = cursor + 1
                 expectToken("identifier")
