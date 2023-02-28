@@ -122,11 +122,11 @@ return function(asmCode,astNodes,sd)
             ins("    sltu "..data[1]..", "..data[2]..", "..data[3].."\n")
         end,
         ["EqualReg"] = function(data)
-            ins("    sub "..data[1]..", "..data[1]..", "..data[2].."\n")
+            ins("    sub "..data[1]..", "..data[2]..", "..data[1].."\n")
             ins("    sltiu "..data[1]..", "..data[1]..", 1\n")
         end,
         ["NotEqualReg"] = function(data)
-            ins("    sub "..data[1]..", "..data[1]..", "..data[2].."\n")
+            ins("    sub "..data[1]..", "..data[2]..", "..data[1].."\n")
             ins("    sltu "..data[1]..", zero, "..data[1].."\n")
         end,
         ["AddImm"] = function(data)
