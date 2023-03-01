@@ -176,10 +176,8 @@ return function(asmCode,astNodes,sd)
     ins(".bss\n")
 
     for _,i in ipairs(irCode[4]) do
-        if i["size"] == 1 then
-            ins(".align 4\n")
-        elseif i["size"] >= 2 and i["size"] <= 3 then
-            ins(".align 4\n")
+        if i["size"] >= 2 and i["size"] <= 3 then
+            ins(".align 2\n")
         elseif i["size"] >= 4 then
             ins(".align 4\n")
         end

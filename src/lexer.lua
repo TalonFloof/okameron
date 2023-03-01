@@ -49,7 +49,7 @@ return function(code)
             addToken("identifier")
         elseif code:sub(cursor,cursor) == '"' then
             cursor = cursor + 1
-            while (code:sub(cursor,cursor) ~= '"') or (code:sub(cursor,cursor) == '"' and code:sub(cursor,cursor-1) == "\\") do cursor = cursor + 1 end
+            while (code:sub(cursor,cursor) ~= '"') or (code:sub(cursor,cursor) == '"' and code:sub(cursor-1,cursor-1) == "\\") do cursor = cursor + 1 end
             addToken("string")
         elseif isNumber(code:sub(cursor,cursor)) then
             while isNumberExt(code:sub(cursor,cursor)) do cursor = cursor + 1 end

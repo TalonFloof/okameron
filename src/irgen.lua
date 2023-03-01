@@ -244,9 +244,13 @@ return function(astNodes,wordSize,regCount)
                 end
             end
         end,
-        ["!"] = function(args,reg)
+        ["~"] = function(args,reg)
             getVal(args[1],reg)
             text("NotReg",reg)
+        end,
+        ["!"] = function(args,reg)
+            getVal(args[1],reg)
+            text("XorImm",{reg,1})
         end,
         ["&"] = function(args,reg)
             for i,arg in ipairs(args) do
