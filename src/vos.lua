@@ -31,6 +31,16 @@ function serialize_list (tabl, indent)
     return str
 end
 
+function table.slice(tbl, first, last, step)
+    local sliced = {}
+  
+    for i = first or 1, last or #tbl, step or 1 do
+      sliced[#sliced+1] = tbl[i]
+    end
+  
+    return sliced
+  end
+
 while #args > 0 and string.sub(args[1],1,1) == "-" do
     if string.sub(args[1],2,6) == "arch=" then
         arch = string.sub(args[1],7)

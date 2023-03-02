@@ -141,6 +141,9 @@ return function(asmCode,astNodes,sd)
         ["LinkedBranch"] = function(data)
             ins("    bl "..data.."\n")
         end,
+        ["LinkedBranchReg"] = function(data)
+            ins("    blr ra, "..data.."\n")
+        end,
         ["BranchIfZero"] = function(data)
             ins("    beq "..data[1]..", zero, "..data[2].."\n")
         end,

@@ -94,8 +94,8 @@ return function(astNodes,wordSize,regCount)
         elseif arg.type == "symbol" then
             if globalVars[arg.data] then
                 text("LoadAddr",{reg,arg.data})
-            end
-            if variables[arg.data] then
+                text("LoadWord",{reg,reg})
+            elseif variables[arg.data] then
                 text("LoadStack",{reg,variables[arg.data]+(savedCount*wordSize)})
             else
                 for i,j in ipairs(curArgs) do
@@ -134,7 +134,14 @@ return function(astNodes,wordSize,regCount)
         if nestedLevel > 1 and #args > 0 then
             text("AddImm",{"sp",-(#args*wordSize)})
         end
-        text("LinkedBranch",name)
+        if type(name) ~= "string" then
+            local reg = ralloc()
+            getVal(name,reg)
+            rfree(reg)
+            text("LinkedBranchReg",reg)
+        else
+            text("LinkedBranch",name)
+        end
         if r ~= nil then
             text("MovReg",{r,"a0"})
         end
@@ -510,12 +517,28 @@ return function(astNodes,wordSize,regCount)
             end
             text("Branch",".ret")
         end,
+        ["call"] = function(args,reg)
+            if reg ~= nil then
+                func(args[1],table.slice(args,2),reg)
+            else
+                func(args[1],table.slice(args,2))
+            end
+        end,
         ["="] = function(args)
             if variables[args[1].data] ~= nil then
                 local reg = ralloc()
                 getVal(args[2],reg)
                 rfree(reg)
                 text("StoreStack",{reg,(variables[args[1].data]+(savedCount*wordSize))})
+                return
+            elseif globalVars[args[1].data] then
+                local reg = ralloc()
+                getVal(args[2],reg)
+                local reg2 = ralloc()
+                text("LoadAddr",{reg2,args[1].data})
+                rfree(reg2)
+                rfree(reg)
+                text("StoreWord",{reg,reg2})
                 return
             else
                 for i,j in ipairs(curArgs) do
@@ -548,7 +571,7 @@ return function(astNodes,wordSize,regCount)
     end)
 
     forEach(astNodes,"globalWordVar",function(node)
-        data(node.data.name,node.data.data)
+        data(node.data.name,node.data.num)
         globalVars[node.data.name] = true;
     end)
 

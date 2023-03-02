@@ -194,6 +194,9 @@ return function(asmCode,astNodes,sd)
                 ins("    call "..data.."\n")
             end
         end,
+        ["LinkedBranchReg"] = function(data)
+            ins("    call "..regConv[data].."\n")
+        end,
         ["BranchIfZero"] = function(data)
             ins("    cmp.32 "..regConv[data[1]]..", 0".."\n")
             if data[2]:sub(1,1) == "." then
