@@ -638,6 +638,7 @@ return function(astNodes,wordSize,regCount)
         variables["_n"] = nil
         -- Get Saved Register Count
         countSaved = true
+        savedCount = 0
         for _,i in pairs(node.data.nodes) do
             if i.data.name ~= "int" then
                 getVal(i,nil)
