@@ -524,6 +524,9 @@ return function(astNodes,wordSize,regCount)
                 func(args[1],table.slice(args,2))
             end
         end,
+        ["ptrOf"] = function(args,reg)
+            text("LoadAddr",{reg,args[1].data})
+        end,
         ["="] = function(args)
             if variables[args[1].data] ~= nil then
                 local reg = ralloc()
