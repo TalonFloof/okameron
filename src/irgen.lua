@@ -122,17 +122,22 @@ return function(astNodes,wordSize,regCount)
 
     func = function(name,args,r)
         nestedLevel = nestedLevel + 1
-        if nestedLevel > 1 and #args > 0 then
+        local argCount = #args
+        if r ~= nil and #args == 0 then
+            table.insert(args,{type="nil"})
+            argCount = argCount + 1
+        end
+        if nestedLevel > 1 and argCount > 0 and r ~= "a0" then
             -- print("WARNING!!! Call \""..name.."\" has a nested function. This is currently broken, so proceed with caution...")
-            for i=1,#args do
+            for i=1,argCount do
                 text("StoreStack",{"a"..(i-1),((1-i)*wordSize)})
             end
         end
         for i,j in ipairs(args) do
             getVal(j,"a"..(i-1))
         end
-        if nestedLevel > 1 and #args > 0 then
-            text("AddImm",{"sp",-(#args*wordSize)})
+        if nestedLevel > 1 and argCount > 0 and r ~= "a0" then
+            text("AddImm",{"sp",-(argCount*wordSize)})
         end
         if type(name) ~= "string" then
             local reg = ralloc()
@@ -142,12 +147,12 @@ return function(astNodes,wordSize,regCount)
         else
             text("LinkedBranch",name)
         end
-        if r ~= nil then
+        if r ~= nil and r ~= "a0" then
             text("MovReg",{r,"a0"})
         end
-        if nestedLevel > 1 and #args > 0 then
-            text("AddImm",{"sp",(#args*wordSize)})
-            for i=1,#args do
+        if nestedLevel > 1 and argCount > 0 and r ~= "a0" then
+            text("AddImm",{"sp",(argCount*wordSize)})
+            for i=1,argCount do
                 text("LoadStack",{"a"..(i-1),((1-i)*wordSize)})
             end
         end
