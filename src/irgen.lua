@@ -98,11 +98,14 @@ return function(astNodes,wordSize,regCount)
             elseif variables[arg.data] then
                 text("LoadStack",{reg,variables[arg.data]+(savedCount*wordSize)})
             else
+                local foundSymbol = false
                 for i,j in ipairs(curArgs) do
                     if j == arg.data then
                         text("LoadStack",{reg,((i*wordSize)+wordSize)})
+                        foundSymbol = true
                     end
                 end
+                if not foundSymbol then irgenErr("Unknown Variable: \""..arg.data.."\"!",arg) end
             end
         end
     end
