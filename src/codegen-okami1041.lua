@@ -135,6 +135,9 @@ return function(asmCode,astNodes,sd)
         ["XorImm"] = function(data)
             ins("    xori "..data[1]..", "..data[1]..", "..data[2].."\n")
         end,
+        ["SllImm"] = function(data)
+            ins("    slli "..data[1]..", "..data[1]..", "..data[2].."\n")
+        end,
         ["Branch"] = function(data)
             ins("    b "..data.."\n")
         end,
@@ -163,7 +166,7 @@ return function(asmCode,astNodes,sd)
     ins(".rodata\n")
 
     for _,i in ipairs(irCode[2]) do
-        ins(".global "..i["name"]..": ")
+        ins(i["name"]..": ")
         for _,j in ipairs(i["data"]) do
             ins(".byte "..j.." ")
         end
@@ -173,7 +176,14 @@ return function(asmCode,astNodes,sd)
     ins(".data\n")
 
     for _,i in ipairs(irCode[3]) do
-        ins(".global "..i["name"]..": .word "..i["data"].."\n")
+        if type(i["data"]) == "table" then
+            ins(".global "..i["name"]..":\n")
+            for _,sym in ipairs(i["data"]) do
+                ins("    .word "..sym.."\n")
+            end
+        else
+            ins(".global "..i["name"]..": .word "..i["data"].."\n")
+        end
     end
 
     ins(".bss\n")

@@ -180,6 +180,9 @@ return function(asmCode,astNodes,sd)
         ["XorImm"] = function(data)
             ins("    xor "..regConv[data[1]]..", "..data[2].."\n")
         end,
+        ["SllImm"] = function(data)
+            ins("    sla "..regConv[data[1]]..", "..data[2].."\n")
+        end,
         ["Branch"] = function(data)
             if data:sub(1,1) == "." then
                 ins("    jmp "..curFunc.."_"..data:sub(2).."\n")
@@ -232,7 +235,14 @@ return function(asmCode,astNodes,sd)
     end
 
     for _,i in ipairs(irCode[3]) do
-        ins(i["name"]..": data.32 "..i["data"].."\n")
+        if type(i["data"]) == "table" then
+            ins(i["name"]..":\n")
+            for _,sym in ipairs(i["data"]) do
+                ins("    data.32 "..sym.."\n")
+            end
+        else
+            ins(i["name"]..": data.32 "..i["data"].."\n")
+        end
     end
 
     for _,i in ipairs(irCode[4]) do

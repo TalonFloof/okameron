@@ -535,6 +535,14 @@ return function(astNodes,wordSize,regCount)
         ["ptrOf"] = function(args,reg)
             text("LoadAddr",{reg,args[1].data})
         end,
+        ["index"] = function(args,reg)
+            local r = ralloc()
+            getVal(args[2],r)
+            text("SllImm",{r,2})
+            text("LoadAddr",{reg,args[1].data})
+            text("AddReg",{reg,r})
+            rfree(r)
+        end,
         ["="] = function(args)
             if variables[args[1].data] ~= nil then
                 local reg = ralloc()
@@ -601,9 +609,24 @@ return function(astNodes,wordSize,regCount)
     end)
 
     forEach(astNodes,"external",function(node)
-        functions[node.data.name] = function(args,r)
-            text("LoadAddr",{r,node.data.name})
+        for _,label in ipairs(node.data.symbols) do
+            functions[label] = function(args,r)
+                text("LoadAddr",{r,label})
+            end
         end
+    end)
+
+    forEach(astNodes,"table",function(node)
+        local name = ""
+        local vals = {}
+        for i,j in ipairs(node.data) do
+            if i == 1 then
+                name = j.data
+            else
+                table.insert(vals,j.data)
+            end
+        end
+        data(name,vals)
     end)
     
     forEach(astNodes,"constantString",function(node)

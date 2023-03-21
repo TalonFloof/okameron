@@ -84,11 +84,14 @@ local function parse(tokens)
                 addNode("constant",{name=tokens[cursor-3].txt,val=parseImm(tokens[cursor-2].txt)})
             elseif name == "extern" then
                 cursor = cursor + 1
-                expectToken("identifier")
+                local vars = {}
+                while tokens[cursor].type ~= "endCall" do
+                    expectToken("identifier")
+                    table.insert(vars,tokens[cursor].txt)
+                    cursor = cursor + 1
+                end
                 cursor = cursor + 1
-                expectToken("endCall")
-                cursor = cursor + 1
-                addNode("external",{name=tokens[cursor-2].txt})
+                addNode("external",{symbols=vars})
             elseif name == "externFn" then
                 cursor = cursor + 1
                 local fns = {}
@@ -126,6 +129,10 @@ local function parse(tokens)
                 expectToken("endCall")
                 cursor = cursor + 1
                 addNode("constantString",{name=tokens[cursor-3].txt,val=parseImm(tokens[cursor-2].txt)})
+            elseif name == "table" then
+                cursor = cursor - 1
+                local data = parseCall()
+                addNode("table",data.data.nodes)
             elseif name == "struct" then
                 cursor = cursor + 1
                 expectToken("identifier")
