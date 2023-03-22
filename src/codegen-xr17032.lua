@@ -205,30 +205,30 @@ return function(asmCode,astNodes,sd)
         end
     end
 
-    ins(".rodata\n")
+    ins(".section rodata\n")
 
     for _,i in ipairs(irCode[2]) do
         ins(i["name"]..": ")
         for _,j in ipairs(i["data"]) do
-            ins(".byte "..j.." ")
+            ins(".db "..j.." ")
         end
         ins("\n")
     end
 
-    ins(".data\n")
+    ins(".section data\n")
 
     for _,i in ipairs(irCode[3]) do
         if type(i["data"]) == "table" then
-            ins(".global "..i["name"]..":\n")
+            ins(i["name"]..":\n")
             for _,sym in ipairs(i["data"]) do
-                ins("    .word "..sym.."\n")
+                ins("    .dl "..sym.."\n")
             end
         else
-            ins(".global "..i["name"]..": .word "..i["data"].."\n")
+            ins(i["name"]..": .dl "..i["data"].."\n")
         end
     end
 
-    ins(".bss\n")
+    ins(".section bss\n")
 
     for _,i in ipairs(irCode[4]) do
         if i["size"] >= 2 and i["size"] <= 3 then
@@ -237,9 +237,9 @@ return function(asmCode,astNodes,sd)
             ins(".align 4\n")
         end
         if i["size"] == 0 then
-            ins(".global "..i["name"]..":\n")
+            ins(i["name"]..":\n")
         else
-            ins(".global "..i["name"]..": .resb "..i["size"].."\n")
+            ins(i["name"]..": .bytes"..i["size"]..", 0\n")
         end
     end
 
