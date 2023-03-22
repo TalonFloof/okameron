@@ -85,7 +85,9 @@ return function(asmCode,astNodes,sd)
             ins("    movz.8 "..regConv[data[1]]..", ["..regConv[data[2]].."]\n")
         end,
         ["LoadByteSigned"] = function(data)
-            ins("    mov.8 "..regConv[data[1]]..", ["..regConv[data[2]].."]\n")
+            ins("    movz.8 "..regConv[data[1]]..", ["..regConv[data[2]].."]\n")
+            ins("    sla "..regConv[data[1]]..", 24\n")
+            insa("   sra "..regConv[data[1]]..", 24\n")
         end,
         ["StoreHalf"] = function(data)
             ins("    mov.16 ["..regConv[data[2]].."], "..regConv[data[1]].."\n")
@@ -94,7 +96,9 @@ return function(asmCode,astNodes,sd)
             ins("    movz.16 "..regConv[data[1]]..", ["..regConv[data[2]].."]\n")
         end,
         ["LoadHalfSigned"] = function(data)
-            ins("    mov.16 "..regConv[data[1]]..", ["..regConv[data[2]].."]\n")
+            ins("    movz.16 "..regConv[data[1]]..", ["..regConv[data[2]].."]\n")
+            ins("    sla "..regConv[data[1]]..", 16\n")
+            insa("   sra "..regConv[data[1]]..", 16\n")
         end,
         ["StoreWord"] = function(data)
             ins("    mov.32 ["..regConv[data[2]].."], "..regConv[data[1]].."\n")
