@@ -102,6 +102,15 @@ return function(asmCode,astNodes,sd)
         ["LoadWord"] = function(data)
             ins("    movz.32 "..regConv[data[1]]..", ["..regConv[data[2]].."]\n")
         end,
+        ["LoadWordSigned"] = function(data)
+            ins("    movz.32 "..regConv[data[1]]..", ["..regConv[data[2]].."]\n")
+        end,
+        ["StoreLong"] = function(data)
+            ins("    mov.32 ["..regConv[data[2]].."], "..regConv[data[1]].."\n")
+        end,
+        ["LoadLong"] = function(data)
+            ins("    movz.32 "..regConv[data[1]]..", ["..regConv[data[2]].."]\n")
+        end,
         ["MovReg"] = function(data)
             ins("    movz "..regConv[data[1]]..", "..regConv[data[2]].."\n")
         end,

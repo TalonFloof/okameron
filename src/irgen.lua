@@ -7,6 +7,7 @@ return function(astNodes,wordSize,regCount)
     local globalVars = {}
     local strCount = 1
     local strings = {}
+    local structVals = {}
     local loopCount = 1
     local ifCount = 1
     local currentLoop = -1
@@ -455,6 +456,27 @@ return function(astNodes,wordSize,regCount)
             rfree(addr)
             text("LoadWord",{reg,addr})
         end,
+        ["sw@"] = function(args,reg)
+            local addr = ralloc()
+            getVal(args[1],addr)
+            rfree(addr)
+            text("LoadWordSigned",{reg,addr})
+        end,
+        ["l!"] = function(args)
+            local addr = ralloc()
+            getVal(args[1],addr)
+            local val = ralloc()
+            getVal(args[2],val)
+            rfree(addr)
+            rfree(val)
+            text("StoreLong",{val,addr})
+        end,
+        ["l@"] = function(args,reg)
+            local addr = ralloc()
+            getVal(args[1],addr)
+            rfree(addr)
+            text("LoadLong",{reg,addr})
+        end,
         ["while"] = function(args)
             local previous = currentLoop
             local loopID = loopCount
@@ -536,12 +558,21 @@ return function(astNodes,wordSize,regCount)
             text("LoadAddr",{reg,args[1].data})
         end,
         ["index"] = function(args,reg)
-            local r = ralloc()
-            getVal(args[2],r)
-            text("SllImm",{r,2})
-            text("LoadAddr",{reg,args[1].data})
-            text("AddReg",{reg,r})
-            rfree(r)
+            if structVals[args[2].data] ~= nil then
+                getVal(args[1],reg)
+                text("AddImm",{reg,structVals[args[2].data]})
+            else
+                local r = ralloc()
+                getVal(args[2],r)
+                if wordSize == 8 then
+                    text("SllImm",{r,3})
+                elseif 
+                    text("SllImm",{r,2})
+                end
+                text("LoadAddr",{reg,args[1].data})
+                text("AddReg",{reg,r})
+                rfree(r)
+            end
         end,
         ["="] = function(args)
             if variables[args[1].data] ~= nil then
@@ -596,9 +627,7 @@ return function(astNodes,wordSize,regCount)
 
     forEach(astNodes,"struct",function(node)
         for i,j in ipairs(node.data.entries) do
-            functions[node.data.name.."."..j.name] = function(args,r)
-                text("LoadImm",{r,j.offset})
-            end
+            structVals[node.data.name.."."..j.name] = j.offset
         end
     end)
 
