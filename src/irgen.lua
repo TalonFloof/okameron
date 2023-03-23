@@ -566,7 +566,7 @@ return function(astNodes,wordSize,regCount)
                 getVal(args[2],r)
                 if wordSize == 8 then
                     text("SllImm",{r,3})
-                elseif 
+                elseif wordSize == 4 then
                     text("SllImm",{r,2})
                 end
                 text("LoadAddr",{reg,args[1].data})
