@@ -1,2 +1,2 @@
-# VosLang
-A Lisp-Based, Procedural, Typeless Programming Language written in Lua.
+# Okameron
+A Modula-2/Oberon inspired programming language for Okami1041 (and WIP support for fox32).
