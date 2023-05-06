@@ -241,7 +241,7 @@ return function(ir,asm)
             end
         end,
         ["Negate"]=function(r)
-            io.stdout:write("    sub "..getReg(r)..", zero, "..getReg(r))
+            io.stdout:write("    sub "..getReg(r)..", zero, "..getReg(r).."\n")
         end,
         ["Not"]=function(r)
             io.stdout:write("    addi t0, zero, -1\n")
