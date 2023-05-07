@@ -154,12 +154,13 @@ return function(tokens,wordSize)
                 -- Count Arguments
                 local c = cursor+2
                 local argCount = 0
+                table.insert(opStack,{"(",0,NONE,false})
                 while tokens[c].type ~= "rparen" do
                     if argCount == 0 then argCount = 1 end
                     if tokens[c].type == "lparen" then
                         c = parenSkip(c)
                     elseif tokens[c].type == "comma" and tokens[c+1].type ~= "rparen" then
-                        while #opStack > 0 and opStack[#opStack][1] ~= "(" and opStack[#opStack][1] ~= "FN" do
+                        while #opStack > 0 and opStack[#opStack][1] ~= "(" do
                             local pop = popOp()
                             table.insert(outStack,pop)
                         end
@@ -167,10 +168,11 @@ return function(tokens,wordSize)
                     end
                     c = c + 1
                 end
-                while #opStack > 0 and opStack[#opStack][1] ~= "(" and opStack[#opStack][1] ~= "FN" do
+                while #opStack > 0 and opStack[#opStack][1] ~= "(" do
                     local pop = popOp()
                     table.insert(outStack,pop)
                 end
+                popOp()
                 addOp({"FN",10,NONE,true,tokens[cursor].txt,argCount})
                 inFunc = true
             elseif tokens[cursor].type == "identifier" and not getOp(tokens[cursor].txt) then

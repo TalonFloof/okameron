@@ -79,6 +79,7 @@ for _,i in ipairs(args) do
     file:close()
 end
 local tree, asm = parse(tokens,systemWordSize)
+--io.stderr:write(serialize_list(tree,true,false).."\n")
 local ircode = irgen(tree,systemWordSize)
 --io.stderr:write(serialize_list(ircode[1],true,false).."\n")
 codegen(ircode,asm)
