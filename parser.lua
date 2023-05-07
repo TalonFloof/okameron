@@ -17,15 +17,16 @@ return function(tokens,wordSize)
         local RIGHT = 2
         local finalInsns = {}
         local opTable = {
-            {".",0,NONE,false},
-            {":=",0,NONE,false},
-            {"]",0,NONE,false},
-            {"(",0,NONE,false},
-            {")",0,NONE,false},
+            {".",11,NONE,false},
+            {":=",11,NONE,false},
+            {"[",11,NONE,false},
+            {"]",11,NONE,false},
+            {"(",12,NONE,false},
+            {")",12,NONE,false},
             {"+",8,LEFT,false,function(x,y) return x + y end},
             {"-",8,LEFT,false,function(x,y) return x - y end},
             {"_",10,RIGHT,true,function(x) return 0 - x end}, -- Unary -
-            {"^",0,NONE,true,function(x) parseErr(tokens[cursor].file,tokens[cursor].line,tokens[cursor].col,"Attempt to decast immediate value") end},
+            {"^",11,NONE,true,function(x) parseErr(tokens[cursor].file,tokens[cursor].line,tokens[cursor].col,"Attempt to decast immediate value") end},
             {"*|",9,LEFT,false,function(x,y) return x * y end},
             {"*",9,LEFT,false,function(x,y) return x * y end},
             {"/|",9,LEFT,false,function(x,y) return x // y end},
@@ -90,21 +91,18 @@ return function(tokens,wordSize)
         end
         local function addOp(op)
             if op then
-                if lastOp then
+                if lastOp and op[1] ~= "FN" then
                     if op[1] == "-" then op=getOp("_")
                     elseif op[1] ~= "(" and op[1] ~= ":=" and not op[4] then
                         parseErr(tokens[cursor].file,tokens[cursor].line,tokens[cursor].col,"Illegal use of binary operator \""..op[1].."\"")
                     end
                 end
                 while #opStack > 0 and opStack[#opStack][1] ~= "(" do
-                    local po1 = op[2]
-                    local po2 = opStack[#opStack][2]
-                    local operator = nil
-                    if opStack[#opStack][4] then operator = popOp()
-                    elseif po2 > po2 then operator = popOp()
-                    elseif po2 == po1 and op[3] == LEFT then operator = popOp()
-                    else break end
-                    table.insert(outStack,operator)
+                    if opStack[#opStack][2] > op[2] or (opStack[#opStack][2] == op[2] and op[3] == LEFT) then
+                        table.insert(outStack,popOp())
+                    else
+                        break
+                    end
                 end
                 table.insert(opStack,op)
                 lastOp = op
@@ -147,11 +145,12 @@ return function(tokens,wordSize)
                 end
                 popOp()
             elseif tokens[cursor].type == "lbracket" and tokens[cursor-1].type == "identifier" then
-                addOp({"[",0,NONE,false})
+                table.insert(opStack,{"[",0,NONE,false})
             elseif tokens[cursor].type == "identifier" and tokens[cursor+1].type == "lparen" then
                 -- Count Arguments
                 local c = cursor+2
                 local argCount = 0
+                table.insert(opStack,{"(",0,NONE,false})
                 while tokens[c].type ~= "rparen" do
                     if argCount == 0 then argCount = 1 end
                     if tokens[c].type == "lparen" then
@@ -169,7 +168,7 @@ return function(tokens,wordSize)
                     local pop = popOp()
                     table.insert(outStack,pop)
                 end
-                table.insert(opStack,{"FN",999,NONE,true,tokens[cursor].txt,argCount})
+                addOp({"FN",99999,NONE,false,tokens[cursor].txt,argCount})
                 inFunc = true
             elseif tokens[cursor].type == "identifier" and not getOp(tokens[cursor].txt) then
                 table.insert(outStack,tokens[cursor].txt)

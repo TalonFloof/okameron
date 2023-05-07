@@ -4,6 +4,7 @@ return function(ir,asm)
 
     local curFunc = ""
     local savedRegs = -1
+    local argCount = 0
     local varSpace = 0
     local cursor = 1
     local callDepth = 0
@@ -57,6 +58,7 @@ return function(ir,asm)
             io.stdout:write("    push rfp\n")
         end,
         ["PushVariables"]=function(space,args)
+            argCount = args
             varSpace = space
             if (varSpace-(args*4)) ~= 0 then
                 io.stdout:write("    sub rsp, "..(varSpace-(args*4)).."\n")
@@ -68,8 +70,8 @@ return function(ir,asm)
         end,
         ["PopVariables"]=function()
             io.stdout:write(labelTranslate(".Lret")..":\n")
-            if varSpace ~= 0 then
-                io.stdout:write("    add rsp, "..varSpace.."\n")
+            if (varSpace-(argCount*4)) ~= 0 then
+                io.stdout:write("    add rsp, "..(varSpace-(argCount*4)).."\n")
             end
         end,
         ["PopRet"]=function()
@@ -94,7 +96,7 @@ return function(ir,asm)
         ["EndCall"]=function(name,argCount,r)
             io.stdout:write("    call "..name.."\n")
             if r ~= nil then
-                io.stdout:write("    mv r0, "..getReg(r).."\n")
+                io.stdout:write("    mov "..getReg(r)..", r0\n")
             end
             if callDepth > 1 then
                 if argCount > 0 and not (r[1] == "arg" and r[2] == 0) then
@@ -216,8 +218,8 @@ return function(ir,asm)
             else
                 io.stdout:write("    cmp "..getReg(r1)..", "..getReg(r2).."\n")
             end
-            io.stdout:write("    ifc mov "..getReg(r1)..", 1\n")
-            io.stdout:write("    ifnc mov "..getReg(r1)..", 0\n")
+            io.stdout:write("    iflt mov "..getReg(r1)..", 1\n")
+            io.stdout:write("    ifgteq mov "..getReg(r1)..", 0\n")
         end,
         ["Gt"]=function(r1,r2,sign)
             if r2[1] == "number" then
@@ -243,8 +245,8 @@ return function(ir,asm)
             else
                 io.stdout:write("    cmp "..getReg(r1)..", "..getReg(r2).."\n")
             end
-            io.stdout:write("    ifnc mov "..getReg(r1)..", 1\n")
-            io.stdout:write("    ifc mov "..getReg(r1)..", 0\n")
+            io.stdout:write("    ifgteq mov "..getReg(r1)..", 1\n")
+            io.stdout:write("    iflt mov "..getReg(r1)..", 0\n")
         end,
         ["StoreByte"]=function(d,offset,s)
             if offset == 0 then
@@ -409,11 +411,11 @@ return function(ir,asm)
         end,
         ["BranchIfZero"]=function(r,l)
             io.stdout:write("    cmp "..getReg(r)..", 0\n")
-            io.stdout:write("    ifz jmp"..labelTranslate(l).."\n")
+            io.stdout:write("    ifz jmp "..labelTranslate(l).."\n")
         end,
         ["BranchIfNotZero"]=function(r,l)
             io.stdout:write("    cmp "..getReg(r)..", 0\n")
-            io.stdout:write("    ifnz jmp"..labelTranslate(l).."\n")
+            io.stdout:write("    ifnz jmp "..labelTranslate(l).."\n")
         end,
     }
     while cursor <= #ir[1] do
@@ -431,7 +433,7 @@ return function(ir,asm)
             for j=1,#i[3] do
                 io.stdout:write("data.8 "..tostring(string.byte(string.sub(i[3],j,j))).." ")
             end
-            io.stdout:write(".data.8 0\n")
+            io.stdout:write("data.8 0\n")
         elseif i[2] == "set" then
             io.stdout:write(i[1]..":\n")
             for _,j in ipairs(i[3]) do
