@@ -91,7 +91,7 @@ return function(tokens,wordSize)
         end
         local function addOp(op)
             if op then
-                if lastOp and op[1] ~= "FN" then
+                if lastOp then
                     if op[1] == "-" then op=getOp("_")
                     elseif op[1] ~= "(" and op[1] ~= ":=" and not op[4] then
                         parseErr(tokens[cursor].file,tokens[cursor].line,tokens[cursor].col,"Illegal use of binary operator \""..op[1].."\"")
@@ -105,7 +105,11 @@ return function(tokens,wordSize)
                     end
                 end
                 table.insert(opStack,op)
-                lastOp = op
+                if op[1] ~= "FN" then
+                    lastOp = op
+                else
+                    lastOp = nil
+                end
             end
         end
         while tokens[cursor].type ~= (ending or "semicolon") do
@@ -150,13 +154,12 @@ return function(tokens,wordSize)
                 -- Count Arguments
                 local c = cursor+2
                 local argCount = 0
-                table.insert(opStack,{"(",0,NONE,false})
                 while tokens[c].type ~= "rparen" do
                     if argCount == 0 then argCount = 1 end
                     if tokens[c].type == "lparen" then
                         c = parenSkip(c)
                     elseif tokens[c].type == "comma" and tokens[c+1].type ~= "rparen" then
-                        while #opStack > 0 and opStack[#opStack][1] ~= "(" do
+                        while #opStack > 0 and opStack[#opStack][1] ~= "(" and opStack[#opStack][1] ~= "FN" do
                             local pop = popOp()
                             table.insert(outStack,pop)
                         end
@@ -164,11 +167,11 @@ return function(tokens,wordSize)
                     end
                     c = c + 1
                 end
-                while #opStack > 0 and opStack[#opStack][1] ~= "(" do
+                while #opStack > 0 and opStack[#opStack][1] ~= "(" and opStack[#opStack][1] ~= "FN" do
                     local pop = popOp()
                     table.insert(outStack,pop)
                 end
-                addOp({"FN",99999,NONE,false,tokens[cursor].txt,argCount})
+                addOp({"FN",10,NONE,true,tokens[cursor].txt,argCount})
                 inFunc = true
             elseif tokens[cursor].type == "identifier" and not getOp(tokens[cursor].txt) then
                 table.insert(outStack,tokens[cursor].txt)
