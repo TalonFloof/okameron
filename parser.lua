@@ -423,7 +423,8 @@ return function(tokens,wordSize)
             elseif tokens[cursor].type == "asmKw" then
                 cursor = cursor + 1
                 expectToken("string")
-                local file = io.open((tokens[cursor].txt):sub(2,#tokens[cursor].txt-1),"rb")
+                local parent = getdirectory("./"..tokens[cursor].file)
+                local file = io.open(parent..((tokens[cursor].txt):sub(2,#tokens[cursor].txt-1)),"rb")
                 asmCode = asmCode .. file:read("*a")
                 file:close()
                 cursor = cursor + 1

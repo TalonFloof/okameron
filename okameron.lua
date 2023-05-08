@@ -1,4 +1,4 @@
-local function getdirectory(p)
+function getdirectory(p)
 	for i = #p, 1, -1 do
 		if p:sub(i,i) == "/" then
 			return p:sub(1,i)
