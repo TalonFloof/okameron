@@ -98,7 +98,9 @@ return function(ir,asm)
             callDepth = callDepth + 1
             if callDepth > 1 then
                 if argCount > 0 and not (r[1] == "arg" and r[2] == 0) then
-                    io.stdout:write("    push r0\n")
+                    for i=1,argCount do
+                        io.stdout:write("    push r"..(i-1).."\n")
+                    end
                 end
             end
         end,
@@ -109,7 +111,9 @@ return function(ir,asm)
             end
             if callDepth > 1 then
                 if argCount > 0 and not (r[1] == "arg" and r[2] == 0) then
-                    io.stdout:write("    pop r0\n")
+                    for i=argCount,1,-1 do
+                        io.stdout:write("    pop r"..(i-1).."\n")
+                    end
                 end
             end
             callDepth = callDepth - 1
