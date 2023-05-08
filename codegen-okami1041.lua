@@ -6,6 +6,7 @@ return function(ir,asm)
     
     local savedRegs = -1
     local argCount = 0
+    local argUsage = 0
     local varSpace = 0
     local cursor = 1
     local callDepth = 0
@@ -20,6 +21,19 @@ return function(ir,asm)
                  end
             end
             i = i + 1
+        end
+        return highest+1
+    end
+    local function getArgUsage(start)
+        local i = start
+        local highest = -1
+        while ir[1][i][1] ~= "Return" do
+            for _,val in ipairs(ir[1][i]) do
+                if type(val) == "table" and val[1] == "arg" and val[2] > highest then
+                   highest = val[2]
+                end
+           end
+           i = i + 1
         end
         return highest+1
     end
@@ -46,12 +60,17 @@ return function(ir,asm)
         ["DefSymbol"]=function(name)
             io.stdout:write(".global "..name..":\n")
             savedRegs = getSavedRegs(cursor)
+            argCount = ir[1][cursor+2][3]
+            argUsage = math.max(argCount,getArgUsage(cursor))
         end,
         ["LocalLabel"]=function(name)
             io.stdout:write(name..":\n")
         end,
         ["PushRet"]=function()
-            io.stdout:write("    addi sp, sp, -"..(8+(savedRegs*4)).."\n")
+            io.stdout:write("    addi sp, sp, -"..(8+(savedRegs*4)+((argUsage-argCount)*4)).."\n")
+            for i=argUsage,argCount+1,-1 do
+                io.stdout:write("    sw a"..(i-1)..", "..(((i-argCount)*4)+(savedRegs*4)+8).."(sp)\n")
+            end
             for i=savedRegs,1,-1 do
                 io.stdout:write("    sw s"..(i-1)..", "..((i*4)+8).."(sp)\n")
             end
@@ -60,7 +79,6 @@ return function(ir,asm)
         end,
         ["PushVariables"]=function(space,args)
             varSpace = space
-            argCount = args
             if varSpace ~= 0 then
                 io.stdout:write("    addi sp, sp, -"..varSpace.."\n")
             end
@@ -73,7 +91,7 @@ return function(ir,asm)
             io.stdout:write(".Lret:\n")
             if argCount > 1 then
                 for i=argCount,2,-1 do
-                    io.stdout:write("    lw a"..(i-1)..", -"..(i*4).."(sp)\n")
+                    io.stdout:write("    lw a"..(i-1)..", "..(i*4).."(sp)\n")
                 end
             end
             if varSpace ~= 0 then
@@ -81,12 +99,15 @@ return function(ir,asm)
             end
         end,
         ["PopRet"]=function()
+            for i=argUsage,argCount+1,-1 do
+                io.stdout:write("    lw a"..(i-1)..", "..(((i-argCount)*4)+(savedRegs*4)+8).."(sp)\n")
+            end
             for i=savedRegs,1,-1 do
                 io.stdout:write("    lw s"..(i-1)..", "..((i*4)+8).."(sp)\n")
             end
             io.stdout:write("    lw ra, 8(sp)\n")
             io.stdout:write("    lw fp, 4(sp)\n")
-            io.stdout:write("    addi sp, sp, "..(8+(savedRegs*4)).."\n")
+            io.stdout:write("    addi sp, sp, "..(8+(savedRegs*4)+((argUsage-argCount)*4)).."\n")
         end,
         ["Return"]=function()
             io.stdout:write("    br ra\n")

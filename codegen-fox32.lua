@@ -6,6 +6,7 @@ return function(ir,asm)
     local curFunc = ""
     local savedRegs = -1
     local argCount = 0
+    local argUsage = 0
     local varSpace = 0
     local cursor = 1
     local callDepth = 0
@@ -20,6 +21,19 @@ return function(ir,asm)
                  end
             end
             i = i + 1
+        end
+        return highest+1
+    end
+    local function getArgUsage(start)
+        local i = start
+        local highest = -1
+        while ir[1][i][1] ~= "Return" do
+            for _,val in ipairs(ir[1][i]) do
+                if type(val) == "table" and val[1] == "arg" and val[2] > highest then
+                   highest = val[2]
+                end
+           end
+           i = i + 1
         end
         return highest+1
     end
@@ -48,18 +62,22 @@ return function(ir,asm)
             io.stdout:write(name..":\n")
             curFunc = name
             savedRegs = getSavedRegs(cursor)
+            argCount = ir[1][cursor+2][3]
+            argUsage = math.max(argCount,getArgUsage(cursor))
         end,
         ["LocalLabel"]=function(name)
             io.stdout:write(labelTranslate(name)..":\n")
         end,
         ["PushRet"]=function()
+            for i=argUsage,argCount+1,-1 do
+                io.stdout:write("    push r"..(i-1).."\n")
+            end
             for i=savedRegs,1,-1 do
                 io.stdout:write("    push r"..(i+7).."\n")
             end
             io.stdout:write("    push rfp\n")
         end,
         ["PushVariables"]=function(space,args)
-            argCount = args
             varSpace = space
             if (varSpace-(args*4)) ~= 0 then
                 io.stdout:write("    sub rsp, "..(varSpace-(args*4)).."\n")
@@ -89,6 +107,9 @@ return function(ir,asm)
             io.stdout:write("    pop rfp\n")
             for i=1,savedRegs do
                 io.stdout:write("    pop r"..(i+7).."\n")
+            end
+            for i=argCount+1,argUsage do
+                io.stdout:write("    pop r"..(i-1).."\n")
             end
         end,
         ["Return"]=function()
