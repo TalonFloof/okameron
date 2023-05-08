@@ -69,7 +69,7 @@ return function(ir,asm)
             io.stdout:write(labelTranslate(name)..":\n")
         end,
         ["PushRet"]=function()
-            for i=argUsage,argCount+1,-1 do
+            for i=argUsage,argCount+2,-1 do
                 io.stdout:write("    push r"..(i-1).."\n")
             end
             for i=savedRegs,1,-1 do
@@ -108,7 +108,7 @@ return function(ir,asm)
             for i=1,savedRegs do
                 io.stdout:write("    pop r"..(i+7).."\n")
             end
-            for i=argCount+1,argUsage do
+            for i=argCount+2,argUsage do
                 io.stdout:write("    pop r"..(i-1).."\n")
             end
         end,
