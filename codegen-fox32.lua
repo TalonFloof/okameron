@@ -1,4 +1,5 @@
 systemWordSize = 4
+systemArgRegs = 8
 return function(ir,asm)
     io.stdout:write(asm)
 
@@ -70,8 +71,18 @@ return function(ir,asm)
         end,
         ["PopVariables"]=function()
             io.stdout:write(labelTranslate(".Lret")..":\n")
-            if varSpace ~= 0 then
-                io.stdout:write("    add rsp, "..varSpace.."\n")
+            if argCount > 1 then
+                io.stdout:write("    add rsp, 4\n")
+                for i=2,argCount do
+                    io.stdout:write("    pop r"..(i-1).."\n")
+                end
+                if varSpace-(argCount*4) ~= 0 then
+                    io.stdout:write("    add rsp, "..varSpace-(argCount*4).."\n")
+                end
+            else
+                if varSpace ~= 0 then
+                    io.stdout:write("    add rsp, "..varSpace.."\n")
+                end
             end
         end,
         ["PopRet"]=function()

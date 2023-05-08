@@ -1,9 +1,11 @@
 systemWordSize = 4
+systemArgRegs = 8
 return function(ir,asm)
     io.stdout:write(asm)
     io.stdout:write(".text\n")
     
     local savedRegs = -1
+    local argCount = 0
     local varSpace = 0
     local cursor = 1
     local callDepth = 0
@@ -58,6 +60,7 @@ return function(ir,asm)
         end,
         ["PushVariables"]=function(space,args)
             varSpace = space
+            argCount = args
             if varSpace ~= 0 then
                 io.stdout:write("    addi sp, sp, -"..varSpace.."\n")
             end
@@ -68,6 +71,11 @@ return function(ir,asm)
         end,
         ["PopVariables"]=function()
             io.stdout:write(".Lret:\n")
+            if argCount > 1 then
+                for i=argCount,2,-1 do
+                    io.stdout:write("    lw a"..(i-1)..", -"..(i*4).."(sp)\n")
+                end
+            end
             if varSpace ~= 0 then
                 io.stdout:write("    addi sp, sp, "..varSpace.."\n")
             end
