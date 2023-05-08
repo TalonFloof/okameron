@@ -67,7 +67,7 @@ return function(ir,asm)
             io.stdout:write(name..":\n")
         end,
         ["PushRet"]=function()
-            io.stdout:write("    addi sp, sp, -"..(8+(savedRegs*4)+((argUsage-(argCount+1))*4)).."\n")
+            io.stdout:write("    addi sp, sp, -"..(8+(savedRegs*4)+((argUsage-math.min(argUsage,argCount+1))*4)).."\n")
             for i=argUsage,argCount+2,-1 do
                 io.stdout:write("    sw a"..(i-1)..", "..(((i-argCount-1)*4)+(savedRegs*4)+8).."(sp)\n")
             end
@@ -107,7 +107,7 @@ return function(ir,asm)
             end
             io.stdout:write("    lw ra, 8(sp)\n")
             io.stdout:write("    lw fp, 4(sp)\n")
-            io.stdout:write("    addi sp, sp, "..(8+(savedRegs*4)+((argUsage-(argCount+1))*4)).."\n")
+            io.stdout:write("    addi sp, sp, "..(8+(savedRegs*4)+((argUsage-math.min(argUsage,argCount+1))*4)).."\n")
         end,
         ["Return"]=function()
             io.stdout:write("    br ra\n")
