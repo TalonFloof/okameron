@@ -70,8 +70,8 @@ return function(ir,asm)
         end,
         ["PopVariables"]=function()
             io.stdout:write(labelTranslate(".Lret")..":\n")
-            if (varSpace-(argCount*4)) ~= 0 then
-                io.stdout:write("    add rsp, "..(varSpace-(argCount*4)).."\n")
+            if varSpace ~= 0 then
+                io.stdout:write("    add rsp, "..varSpace.."\n")
             end
         end,
         ["PopRet"]=function()
