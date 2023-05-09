@@ -127,6 +127,7 @@ return function(ir,asm)
             io.stdout:write("    addi sp, sp, "..(8+(savedRegs*4)+((argUsage-math.min(argUsage,argCount+1))*4)).."\n")
         end,
         ["Return"]=function()
+            io.stdout:write("    addi sp, sp, 4\n");
             io.stdout:write("    br ra\n")
         end,
         ["BeginCall"]=function(r,argCount)
