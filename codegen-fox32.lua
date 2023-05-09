@@ -86,6 +86,7 @@ return function(ir,asm)
                 io.stdout:write("    push r"..(i-1).."\n")
             end
             io.stdout:write("    mov rfp, rsp\n")
+            io.stdout:write("    sub rfp, 4\n")
         end,
         ["PopVariables"]=function()
             io.stdout:write(labelTranslate(".Lret")..":\n")
