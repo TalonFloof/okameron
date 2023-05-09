@@ -62,7 +62,7 @@ return function(ir,asm)
             io.stdout:write(name..":\n")
             curFunc = name
             savedRegs = getSavedRegs(cursor)
-            argCount = ir[1][cursor+2][3]
+            argCount = ir[1][cursor+1][3]
             argUsage = math.max(argCount,getArgUsage(cursor))
         end,
         ["LocalLabel"]=function(name)
