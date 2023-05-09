@@ -95,8 +95,9 @@ return function(ir,asm)
                 io.stdout:write("    sw s"..(i-1)..", -"..(i*4).."(sp)\n")
             end
             if savedArgs > 0 then
-                for i=downArgs-1,savedArgs do
-                    io.stdout:write("    sw a"..((i-1)+downArgs)..", -"..((savedRegs*4)+((i)*4)).."(sp)\n")
+                local base = math.max(2,argCount+1)
+                for i=math.max(2,argCount+1),savedArgs+argCount do
+                    io.stdout:write("    sw a"..(i-1)..", -"..((savedRegs*4)+((i-(base-1))*4)).."(sp)\n")
                 end
             end
             io.stdout:write("    addi sp, sp, -"..(savedRegs*4)+(math.max(0,savedArgs)*4).."\n")
@@ -108,11 +109,15 @@ return function(ir,asm)
                 io.stdout:write("    lw s"..(i-1)..", -"..(i*4).."(sp)\n")
             end
             if savedArgs > 0 then
-                for i=argCount-1,savedArgs do
-                    io.stdout:write("    lw a"..((i-1)+argCount)..", -"..((savedRegs*4)+((i)*4)).."(sp)\n")
+                local base = math.max(2,argCount+1)
+                for i=math.max(2,argCount+1),savedArgs+argCount do
+                    io.stdout:write("    sw a"..(i-1)..", -"..((savedRegs*4)+((i-(base-1))*4)).."(sp)\n")
                 end
             end
             io.stdout:write("    mv fp, sp\n")
+            for i=1,argCount do
+                io.stdout:write("    lw a"..(i-1)..", -"..(i*4).."(sp)\n")
+            end
             io.stdout:write("    lw ra, 4(fp)\n")
             io.stdout:write("    lw fp, 0(fp)\n")
         end,
