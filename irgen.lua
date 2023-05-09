@@ -633,43 +633,33 @@ return function(tree,wordSize)
     for _,mod in ipairs(tree) do
         for _,proc in ipairs(mod[6]) do
             text("DefSymbol",proc[2])
+            text("PushRet") -- Includes Saved Registers
             local varSpace = {}
-            local upwardStack = wordSize
-            local downwardStack = 0
+            local stackUsage = wordSize
             local argUsage = 0
-            local extraArgUsage = 0
-            for i,a in ipairs(proc[3]) do
-                if i > systemArgRegs then
-                    varSpace[a[1]] = upwardStack
-                    local size = getSize(mod,mod[3],a[2])
-                    if size < wordSize then
-                        size = wordSize;
-                    end
-                    upwardStack = upwardStack + size
-                    extraArgUsage = extraArgUsage + wordSize
-                else
-                    local size = getSize(mod,mod[3],a[2])
-                    if size < wordSize then
-                        size = wordSize;
-                    end
-                    downwardStack = downwardStack + size
-                    argUsage = argUsage + wordSize
-                    varSpace[a[1]] = -downwardStack
+            for _,a in ipairs(proc[3]) do
+                varSpace[a[1]] = stackUsage
+                local size = getSize(mod,mod[3],a[2])
+                if size < wordSize then
+                    size = wordSize;
                 end
+                stackUsage = stackUsage + size
+                argUsage = argUsage + wordSize
             end
             for _,a in ipairs(proc[5]) do
+                varSpace[a[2]] = stackUsage
                 local size = getSize(mod,mod[3],a[3])
                 if (size % wordSize) ~= 0 then
                     size = ((size // wordSize) + 1) * wordSize;
                 end
-                downwardStack = downwardStack + size;
-                varSpace[a[2]] = -downwardStack
+                stackUsage = stackUsage + size;
             end
-            text("PushFrame",downwardStack-argUsage,argUsage//wordSize,extraArgUsage//wordSize)
+            text("PushVariables",stackUsage-wordSize,argUsage//wordSize)
             for _,a in ipairs(proc[6]) do
                 evaluate(mod,proc,varSpace,a)
             end
-            text("PopFrame",upwardStack//wordSize)
+            text("PopVariables")
+            text("PopRet")
             text("Return")
         end
         for _,var in ipairs(mod[5]) do

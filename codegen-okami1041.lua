@@ -6,8 +6,7 @@ return function(ir,asm)
     
     local savedRegs = -1
     local argCount = 0
-    local extraArgCount = 0
-    local savedArgs = 0
+    local argUsage = 0
     local varSpace = 0
     local cursor = 1
     local callDepth = 0
@@ -61,16 +60,15 @@ return function(ir,asm)
         ["DefSymbol"]=function(name)
             io.stdout:write(".global "..name..":\n")
             savedRegs = getSavedRegs(cursor)
-            argCount = ir[1][cursor+1][3]
-            extraArgCount = ir[1][cursor+1][4]
-            savedArgs = math.max(0,getArgUsage(cursor)-argCount)
+            argCount = ir[1][cursor+2][3]
+            argUsage = math.max(argCount,getArgUsage(cursor))
         end,
         ["LocalLabel"]=function(name)
             io.stdout:write(name..":\n")
         end,
         ["PushRet"]=function()
             io.stdout:write("    addi sp, sp, -"..(8+(savedRegs*4)+((argUsage-math.min(argUsage,argCount+1))*4)).."\n")
-            for i=math.min(systemArgRegs,argUsage),argCount+2,-1 do
+            for i=argUsage,argCount+2,-1 do
                 io.stdout:write("    sw a"..(i-1)..", "..(((i-argCount-1)*4)+(savedRegs*4)+8).."(sp)\n")
             end
             for i=savedRegs,1,-1 do
@@ -79,55 +77,39 @@ return function(ir,asm)
             io.stdout:write("    sw ra, 8(sp)\n")
             io.stdout:write("    sw fp, 4(sp)\n")
         end,
-        ["PushFrame"]=function(space,downArgs,upArgs)
+        ["PushVariables"]=function(space,args)
             varSpace = space
-            io.stdout:write("    addi sp, sp, -4\n")
-            io.stdout:write("    sw ra, 4(sp)\n")
-            io.stdout:write("    sw fp, 0(sp)\n")
+            if varSpace ~= 0 then
+                io.stdout:write("    addi sp, sp, -"..varSpace.."\n")
+            end
+            for i=args,1,-1 do
+                io.stdout:write("    sw a"..(i-1)..", "..(i*4).."(sp)\n")
+            end
             io.stdout:write("    mv sp, fp\n")
-            for i=1,downArgs do
-                io.stdout:write("    sw a"..(i-1)..", -"..(i*4).."(sp)\n")
-            end
-            if (varSpace+downArgs) ~= 0 then
-                io.stdout:write("    addi sp, sp, -"..(varSpace+(downArgs*systemWordSize)).."\n")
-            end
-            for i=1,savedRegs do
-                io.stdout:write("    sw s"..(i-1)..", -"..(i*4).."(sp)\n")
-            end
-            if savedArgs > 0 then
-                local base = math.max(2,argCount+1)
-                for i=math.max(2,argCount+1),savedArgs+argCount do
-                    io.stdout:write("    sw a"..(i-1)..", -"..((savedRegs*4)+((i-(base-1))*4)).."(sp)\n")
-                end
-            end
-            io.stdout:write("    addi sp, sp, -"..(savedRegs*4)+(math.max(0,savedArgs)*4).."\n")
         end,
-        ["PopFrame"]=function()
+        ["PopVariables"]=function()
             io.stdout:write(".Lret:\n")
-            io.stdout:write("    addi sp, sp, -"..(savedRegs*4)+(math.max(0,savedArgs)*4).."\n")
-            for i=1,savedRegs do
-                io.stdout:write("    lw s"..(i-1)..", -"..(i*4).."(sp)\n")
-            end
-            if savedArgs > 0 then
-                local base = math.max(2,argCount+1)
-                for i=math.max(2,argCount+1),savedArgs+argCount do
-                    io.stdout:write("    sw a"..(i-1)..", -"..((savedRegs*4)+((i-(base-1))*4)).."(sp)\n")
+            if argCount > 1 then
+                for i=argCount,2,-1 do
+                    io.stdout:write("    lw a"..(i-1)..", "..(i*4).."(sp)\n")
                 end
             end
-            io.stdout:write("    mv fp, sp\n")
-            for i=1,argCount do
-                io.stdout:write("    lw a"..(i-1)..", -"..(i*4).."(sp)\n")
+            if varSpace ~= 0 then
+                io.stdout:write("    addi sp, sp, "..varSpace.."\n")
             end
-            io.stdout:write("    lw ra, 4(fp)\n")
-            io.stdout:write("    lw fp, 0(fp)\n")
         end,
         ["PopRet"]=function()
+            for i=argUsage,argCount+2,-1 do
+                io.stdout:write("    lw a"..(i-1)..", "..(((i-argCount-1)*4)+(savedRegs*4)+8).."(sp)\n")
+            end
+            for i=savedRegs,1,-1 do
+                io.stdout:write("    lw s"..(i-1)..", "..((i*4)+8).."(sp)\n")
+            end
             io.stdout:write("    lw ra, 8(sp)\n")
             io.stdout:write("    lw fp, 4(sp)\n")
             io.stdout:write("    addi sp, sp, "..(8+(savedRegs*4)+((argUsage-math.min(argUsage,argCount+1))*4)).."\n")
         end,
         ["Return"]=function()
-            io.stdout:write("    addi sp, sp, 4\n");
             io.stdout:write("    br ra\n")
         end,
         ["BeginCall"]=function(r,argCount)
