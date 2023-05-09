@@ -264,7 +264,7 @@ return function(tree,wordSize)
                 evaluate(mod,proc,varSpace,val[3],reg,true)
             elseif val[2] == "LSH" then
                 evaluate(mod,proc,varSpace,val[3],reg)
-                if val[3][1] == "number" then
+                if val[4][1] == "number" then
                     text("Lsh",reg,val[4])
                 else
                     local r = ralloc()
@@ -274,7 +274,7 @@ return function(tree,wordSize)
                 end
             elseif val[2] == "RSH" then
                 evaluate(mod,proc,varSpace,val[3],reg)
-                if val[3][1] == "number" then
+                if val[4][1] == "number" then
                     text("Rsh",reg,val[4])
                 else
                     local r = ralloc()
@@ -284,7 +284,7 @@ return function(tree,wordSize)
                 end
             elseif val[2] == "ASH" then
                 evaluate(mod,proc,varSpace,val[3],reg)
-                if val[3][1] == "number" then
+                if val[4][1] == "number" then
                     text("Ash",reg,val[4])
                 else
                     local r = ralloc()
