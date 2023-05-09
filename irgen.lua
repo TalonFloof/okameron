@@ -100,6 +100,19 @@ return function(tree,wordSize)
         end
         irgenErr(mod[2],"Undefined Type \""..typ.."\" (hint: use IMPORT to use types from other modules)")
     end
+    local function getConst(mod,imports,name)
+        local tab = {table.unpack(imports)}
+        table.insert(tab,mod[2])
+        for _,i in ipairs(tab) do
+            local m = findModule(i)
+            for _,j in ipairs(m[5]) do
+                if j[1] == "const" and j[2] == name then
+                    return j[3][2]
+                end
+            end
+        end
+        irgenErr(mod[2],"Undefined Constant \""..name.."\" (hint: use IMPORT to use constants from other modules)")
+    end
     local function getVarType(mod,imports,loc,var)
         for _,i in ipairs(loc) do
             if i[2] == var then
@@ -171,7 +184,11 @@ return function(tree,wordSize)
         elseif typ[1] == "ptrOf" then
             return wordSize
         elseif typ[1] == "array" then
-            return typ[2]*getSize(mod,imports,typ[3])
+            if type(typ[2]) == "string" then
+                return getConst(mod,imports,typ[2])*getSize(mod,imports,typ[3])
+            else
+                return typ[2]*getSize(mod,imports,typ[3])
+            end
         elseif typ[1] == "record" then
             local offset = 0
             for i,j in ipairs(typ) do

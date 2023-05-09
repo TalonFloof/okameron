@@ -260,8 +260,13 @@ return function(tokens,wordSize)
             end
         elseif tokens[cursor].type == "arrayKw" then
             cursor = cursor + 1
-            expectToken("number")
-            local size = tonumber(tokens[cursor].txt)
+            local size = false
+            if tokens[cursor].type == "identifier" then
+                size = tokens[cursor].txt
+            else
+                expectToken("number")
+                size = tonumber(tokens[cursor].txt)
+            end
             cursor = cursor + 1
             expectToken("ofKw")
             cursor = cursor + 1
