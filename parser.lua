@@ -26,6 +26,7 @@ return function(tokens,wordSize)
             {"+",8,LEFT,false,function(x,y) return x + y end},
             {"-",8,LEFT,false,function(x,y) return x - y end},
             {"_",10,RIGHT,true,function(x) return 0 - x end}, -- Unary -
+            {"~",11,NONE,true,function(x) parseErr(tokens[cursor].file,tokens[cursor].line,tokens[cursor].col,"Attempt to cast immediate value to signed value") end},
             {"^",11,NONE,true,function(x) parseErr(tokens[cursor].file,tokens[cursor].line,tokens[cursor].col,"Attempt to decast immediate value") end},
             {"*|",9,LEFT,false,function(x,y) return x * y end},
             {"*",9,LEFT,false,function(x,y) return x * y end},

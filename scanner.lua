@@ -54,6 +54,7 @@ return function(fileName,module)
         ["["] = "lbracket",
         ["{"] = "lbrace",
         [":="] = "assign",
+        ["~"] = "tail",
         ["^"] = "caret",
         ["="] = "eq",
         ["#"] = "neq",

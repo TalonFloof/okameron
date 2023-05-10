@@ -607,6 +607,36 @@ return function(tree,wordSize)
             else
                 indexSize = nodeSize
             end
+        elseif val[1] == "~" then
+            evaluate(mod,proc,varSpace,val[2],reg)
+            lastType = lastType[2]
+            while lastType[1] == "customType" do lastType = getType(mod,mod[3],lastType[2]) end
+            if lastType[1] == "numType" and lastType[2] == 1 then
+                if wordSize == 4 then
+                    text("Lsh",reg,24)
+                    text("Ash",reg,24)
+                else
+                    text("Lsh",reg,56)
+                    text("Ash",reg,56)
+                end
+            elseif lastType[1] == "numType" and lastType[2] == 2 then
+                if wordSize == 4 then
+                    text("Lsh",reg,16)
+                    text("Ash",reg,16)
+                else
+                    text("Lsh",reg,48)
+                    text("Ash",reg,48)                
+                end
+            elseif lastType[1] == "numType" and lastType[2] == 4 then
+                if wordSize == 8 then
+                    text("Lsh",reg,32)
+                    text("Ash",reg,32)
+                end
+            elseif lastType[1] == "numType" and lastType[2] == 8 then
+                
+            else
+               irgenErr(mod[2],"Non-integer variables cannot be cast to a signed integer") 
+            end
         elseif val[1] == "^" then
             evaluate(mod,proc,varSpace,val[2],reg,false)
             lastType = lastType[2]
