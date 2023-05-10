@@ -362,12 +362,24 @@ return function(tree,wordSize)
                 rfree(r)
                 text("LoadLong",reg,0,r)
             elseif val[2] == "RETURN" then
-                evaluate(mod,proc,varSpace,val[3],{"arg",0},false)
+                if val[3] then
+                    evaluate(mod,proc,varSpace,val[3],{"arg",0},false)
+                end
                 text("Branch",".Lret")
             elseif val[2] == "CONTINUE" then
                 text("Branch",".Lwhile"..currentLoop)
             elseif val[2] == "BREAK" then
                 text("Branch",".Lwhile"..currentLoop.."_after")
+            elseif val[2] == "CALL" then
+                local args = #val-3
+                text("BeginCall",reg,args)
+                for i=1,#val do
+                    evaluate(mod,proc,varSpace,val[4+i],{"arg",i-1})
+                end
+                local r = ralloc()
+                evaluate(mod,proc,varSpace,val[3],r)
+                rfree(r)
+                text("EndCall",r,args,reg)
             else
                 getProcedure(mod,mod[3],val[2])
                 text("BeginCall",reg,#val-2)
