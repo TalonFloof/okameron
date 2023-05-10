@@ -38,7 +38,7 @@ return function(tokens,wordSize)
             {"&",9,LEFT,false,function(x,y) return x & y end},
             {"XOR",8,LEFT,false,function(x,y) return x ~ y end},
             {"OR",8,LEFT,false,function(x,y) return x | y end},
-            {"~",10,RIGHT,true,function(x) return ~x end},
+            {"NOT",10,RIGHT,true,function(x) return ~x end},
             {"=",7,LEFT,false,function(x,y) return x == y end},
             {"#",7,LEFT,false,function(x,y) return x ~= y end},
             {"<",7,LEFT,false,function(x,y) return x < y end},
@@ -132,6 +132,8 @@ return function(tokens,wordSize)
                 table.insert(outStack,popOp())
             elseif tokens[cursor].type == "dot" then
                 lastOp = {".",0,NONE,false}
+            elseif tokens[cursor].type == "tail" then
+                table.insert(outStack,{"~",0,NONE,true})
             elseif tokens[cursor].type == "caret" then
                 table.insert(outStack,{"^",0,NONE,true})
             elseif tokens[cursor].type == "assign" then
