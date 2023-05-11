@@ -387,7 +387,11 @@ return function(ir,asm)
                 io.stdout:write(".byte "..tostring(string.byte(string.sub(i[3],j,j))).." ")
             end
             io.stdout:write(".byte 0\n")
-        elseif i[2] == "set" then
+        end
+    end
+    io.stdout:write(".data\n")
+    for _,i in ipairs(ir[2]) do
+        if i[2] == "set" then
             io.stdout:write(".align 4\n")
             io.stdout:write(i[1]..":\n")
             for _,j in ipairs(i[3]) do

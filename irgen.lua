@@ -727,6 +727,17 @@ return function(tree,wordSize)
             elseif var[1] == "const" then
                 if var[3][1] == "set" then
                     table.remove(var[3],1)
+                    for i=3,#var do
+                        if var[i][1] == "string" then
+                            if not strings[var[i][2]] then
+                                rodata("__okameronString"..strCount,"string",load("return "..var[i][2])())
+                                strings[var[i][2]] = strCount
+                                strCount = strCount + 1
+                            end
+                            var[i] = {"symbol","__okameronString"..strings[var[i][2]]}
+                        end
+                    end
+                    io.stderr:write(serialize_list(var).."\n")
                     rodata(var[2],"set",var[3])
                 else
                     rodata(var[2],"set",{var[3]})
