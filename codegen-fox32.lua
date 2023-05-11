@@ -128,7 +128,7 @@ return function(ir,asm)
         end,
         ["EndCall"]=function(name,argCount,r)
             if type(name) == "table" then
-                io.stdout:write("    call "..getReg(r).."\n")
+                io.stdout:write("    call "..getReg(name).."\n")
             else
                 io.stdout:write("    call "..name.."\n")
             end

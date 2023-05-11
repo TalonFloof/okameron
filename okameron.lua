@@ -88,5 +88,6 @@ local tree, asm = parse(tokens,systemWordSize)
 asm = startup .. "\n" .. asm
 --io.stderr:write(serialize_list(tree,true,false).."\n")
 local ircode = irgen(tree,systemWordSize)
---io.stderr:write(serialize_list(ircode[1],true,false).."\n")
+--io.stderr:write(serialize_list(ircode[1],true,false).."\n\n\n")
+--io.stderr:write(serialize_list(ircode[2],true,false).."\n")
 codegen(ircode,asm)

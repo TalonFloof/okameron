@@ -139,10 +139,10 @@ return function(tree,wordSize)
                         end
                     end
                 elseif j[1] == "const" and j[2] == var then
-                    if j[3][1] == "number" then
-                        return {"numType",wordSize}
-                    elseif j[3][1] == "set" then
-                        return {"ptrOf",{"numType",wordSize}}
+                    if j[3][1] == "set" then
+                        return {"array",#j[3]-1,{"numType",wordSize}}
+                    else
+                        return {"constant"}
                     end
                 end
             end
@@ -373,13 +373,17 @@ return function(tree,wordSize)
             elseif val[2] == "CALL" then
                 local args = #val-3
                 text("BeginCall",reg,args)
-                for i=1,#val do
-                    evaluate(mod,proc,varSpace,val[4+i],{"arg",i-1})
+                for i=4,#val do
+                    evaluate(mod,proc,varSpace,val[i],{"arg",i-4})
                 end
                 local r = ralloc()
                 evaluate(mod,proc,varSpace,val[3],r)
                 rfree(r)
-                text("EndCall",r,args,reg)
+                if reg then
+                    text("EndCall",r,args,reg)
+                else
+                    text("EndCall",r,args)
+                end
             else
                 getProcedure(mod,mod[3],val[2])
                 text("BeginCall",reg,#val-2)
@@ -680,10 +684,15 @@ return function(tree,wordSize)
                 end
             else
                 assertGlobalVar(mod,mod[3],val[2])
-                text("LoadAddr",reg,val[2])
-                lastType = getVarType(mod,mod[3],getProcVars(proc),lastSym[2])
-                if not getAddr then
-                    text(getLoadType(lastType),reg,0,reg)
+                if getVarType(mod,mod[3],getProcVars(proc),val[2])[1] == "constant" then
+                    text("LoadImmediate",reg,getConst(mod,mod[3],val[2]))
+                    lastType = {"numType",wordSize}
+                else
+                    text("LoadAddr",reg,val[2])
+                    lastType = getVarType(mod,mod[3],getProcVars(proc),lastSym[2])
+                    if not getAddr then
+                        text(getLoadType(lastType),reg,0,reg)
+                    end
                 end
             end
         end
@@ -721,13 +730,14 @@ return function(tree,wordSize)
             text("PopRet")
             text("Return")
         end
+    end
+    for _,mod in ipairs(tree) do
         for _,var in ipairs(mod[5]) do
             if var[1] == "var" then
                 bss(var[2],getSize(mod,mod[3],var[3]))
             elseif var[1] == "const" then
                 if var[3][1] == "set" then
-                    table.remove(var[3],1)
-                    for i=1,#var[3] do
+                    for i=2,#var[3] do
                         if var[3][i][1] == "string" then
                             if not strings[var[3][i][2]] then
                                 rodata("__okameronString"..strCount,"string",load("return "..var[3][i][2])())
@@ -737,9 +747,8 @@ return function(tree,wordSize)
                             var[3][i] = {"symbol","__okameronString"..strings[var[3][i][2]]}
                         end
                     end
+                    table.remove(var[3],1)
                     rodata(var[2],"set",var[3])
-                else
-                    rodata(var[2],"set",{var[3]})
                 end
             end
         end
