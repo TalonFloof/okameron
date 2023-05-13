@@ -142,6 +142,7 @@ return function(tokens,wordSize)
                     table.insert(outStack,pop)
                 end
                 hasAssign = true;
+                lastOp = {":=",0,NONE,false}
             elseif tokens[cursor].type == "rparen" then
                 while #opStack > 0 and opStack[#opStack][1] ~= "(" do
                     local pop = popOp()
