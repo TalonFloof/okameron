@@ -87,6 +87,17 @@ return function(tree,wordSize)
         end
         irgenErr(mod[2],"Undefined Procedure \""..name.."\" (hint: use IMPORT to use procedures from other modules)")
     end
+    local function getProcedureOrNull(mod,imports,name)
+        local tab = {table.unpack(imports)}
+        table.insert(tab,mod[2])
+        for _,i in ipairs(tab) do
+            local val = findProcedure(findModule(i),name)
+            if val ~= nil then
+                return val
+            end
+        end
+        return nil
+    end
     local function getType(mod,imports,typ)
         local tab = {table.unpack(imports)}
         table.insert(tab,mod[2])
@@ -114,6 +125,9 @@ return function(tree,wordSize)
         irgenErr(mod[2],"Undefined Constant \""..name.."\" (hint: use IMPORT to use constants from other modules)")
     end
     local function getVarType(mod,imports,loc,var)
+        if getProcedureOrNull(mod,imports,var) ~= nil then
+            return {"procedurePtr"}
+        end
         for _,i in ipairs(loc) do
             if i[2] == var then
                 local ret = i[3]
@@ -176,7 +190,10 @@ return function(tree,wordSize)
                 end
             end
         end
-        irgenErr(mod[2],"Undefined Variable/Constant \""..name.."\" (hint: use IMPORT to use variables and constants from other modules)")
+        if getProcedureOrNull(mod,imports,name) ~= nil then
+            return
+        end
+        irgenErr(mod[2],"Undefined Variable/Constant/Procedure \""..name.."\" (hint: use IMPORT to use variables and constants from other modules)")
     end
     local function getSize(mod,imports,typ)
         if typ[1] == "numType" then
