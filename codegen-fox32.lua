@@ -455,6 +455,9 @@ return function(ir,asm)
             io.stdout:write("    ifnz jmp "..labelTranslate(l).."\n")
         end,
     }
+    if useXrSDK then
+        io.stdout:write(".section text\n")
+    end
     while cursor <= #ir[1] do
         local insn = ir[1][cursor]
         if not ops[insn[1]] then
@@ -464,21 +467,43 @@ return function(ir,asm)
         end
         cursor = cursor + 1
     end
+    if useXrSDK then
+        io.stdout:write(".section rodata\n")
+    end
     for _,i in ipairs(ir[2]) do
         if i[2] == "string" then
             io.stdout:write(i[1]..": ")
             for j=1,#i[3] do
-                io.stdout:write("data.8 "..tostring(string.byte(string.sub(i[3],j,j))).." ")
+                if useXrSDK then
+                    io.stdout:write(".db "..tostring(string.byte(string.sub(i[3],j,j))).." ")
+                else
+                    io.stdout:write("data.8 "..tostring(string.byte(string.sub(i[3],j,j))).." ")
+                end
             end
-            io.stdout:write("data.8 0\n")
+            if useXrSDK then
+                io.stdout:write(".db 0\n")
+            else
+                io.stdout:write("data.8 0\n")
+            end
         elseif i[2] == "set" then
             io.stdout:write(i[1]..":\n")
             for _,j in ipairs(i[3]) do
-                io.stdout:write("    data.32 "..j[2].."\n")
+                if useXrSDK then
+                    io.stdout:write("    .dl "..j[2].."\n")
+                else
+                    io.stdout:write("    data.32 "..j[2].."\n")
+                end
             end
         end
     end
+    if useXrSDK then
+        io.stdout:write(".section bss\n")
+    end
     for _,i in ipairs(ir[3]) do
-        io.stdout:write(i[1]..": data.fill 0, "..i[2].."\n")
+        if useXrSDK then
+            io.stdout:write(i[1]..": .bytes "..i[2].." 0\n")
+        else
+            io.stdout:write(i[1]..": data.fill 0, "..i[2].."\n")
+        end
     end
 end

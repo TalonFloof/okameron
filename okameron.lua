@@ -19,6 +19,8 @@ local irgen = dofile(sd.."irgen.lua")
 
 local startup = ""
 
+useXrSDK = false
+
 while #args > 0 and string.sub(args[1],1,1) == "-" do
     if string.sub(args[1],2,6) == "arch=" then
         arch = string.sub(args[1],7)
@@ -26,6 +28,8 @@ while #args > 0 and string.sub(args[1],1,1) == "-" do
         local file = io.open(string.sub(args[1],10),"rb")
         startup = file:read("*a")
         file:close()
+    elseif string.sub(args[1],2,#args[1]) == "xrsdk" then
+        useXrSDK = true
     else
         print("Unknown option \""..args[1].."\"")
         return
