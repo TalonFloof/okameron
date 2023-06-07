@@ -611,7 +611,9 @@ return function(tree,wordSize)
                 end
             end
             if not getAddr then
-                text("Load",reg,0,reg)
+                if lastType[1] == "numType" and lastType[2] == 1 then text("LoadByte",reg,0,reg)
+                elseif lastType[1] == "numType" and lastType[2] == 2 then text("LoadHalf",reg,0,reg)
+                else text("Load",reg,0,reg) end
             end
         elseif val[1] == "[" then
             evaluate(mod,proc,varSpace,val[2],reg,true)
