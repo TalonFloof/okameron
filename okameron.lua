@@ -11,7 +11,7 @@ local sd = getdirectory(arg[0])
 
 local args = {...}
 
-local arch = "okami1041"
+arch = "okami1041"
 
 local scan = dofile(sd.."scanner.lua")
 local parse = dofile(sd.."parser.lua")

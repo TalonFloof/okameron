@@ -205,7 +205,7 @@ return function(tree,wordSize)
             for i,j in ipairs(typ) do
                 if i ~= 1 then
                     local s = getSize(mod,imports,j[2])
-                    if (offset % math.min(s,wordSize)) > 0 then
+                    if (offset % math.min(s,wordSize)) > 0 and arch ~= "fox32" then
                         offset = (offset + (math.min(s,wordSize)-(offset % math.min(s,wordSize)))) + s
                     else
                         offset = offset + s
@@ -229,13 +229,13 @@ return function(tree,wordSize)
             if i ~= 1 then
                 if j[1] == val[2] then
                     local s = getSize(mod,imports,j[2])
-                    if (offset % math.min(s,wordSize)) > 0 then
+                    if (offset % math.min(s,wordSize)) > 0 and arch ~= "fox32" then
                         offset = (offset + (math.min(s,wordSize)-(offset % math.min(s,wordSize))))
                     end
                     return offset
                 else
                     local s = getSize(mod,imports,j[2])
-                    if (offset % math.min(s,wordSize)) > 0 then
+                    if (offset % math.min(s,wordSize)) > 0 and arch ~= "fox32" then
                         offset = (offset + (math.min(s,wordSize)-(offset % math.min(s,wordSize)))) + s
                     else
                         offset = offset + s
