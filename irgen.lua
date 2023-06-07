@@ -212,6 +212,9 @@ return function(tree,wordSize)
                     end
                 end
             end
+            if arch == "fox32" and (offset % wordSize) > 0 then
+                offset = offset + (8-(offset % wordSize))
+            end
             return offset
         elseif typ[1] == "set" then
             return (#typ-1)*wordSize
