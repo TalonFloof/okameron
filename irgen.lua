@@ -264,11 +264,13 @@ return function(tree,wordSize)
             else
                 local r1 = ralloc()
                 evaluate(mod,proc,varSpace,val[3],r1)
+                indexSize = -1
                 local r2 = ralloc()
                 evaluate(mod,proc,varSpace,val[2],r2,true)
                 rfree(r2)
                 rfree(r1)
                 if indexSize ~= -1 then
+                    io.stderr:write(tostring(indexSize).."\n")
                     if indexSize > wordSize then
                         irgenErr(mod[2],"Cannot assign an element to a value greater than the size of our target's word size!")
                     elseif indexSize == 8 then
@@ -675,6 +677,7 @@ return function(tree,wordSize)
             end
         elseif val[1] == "^" then
             evaluate(mod,proc,varSpace,val[2],reg,false)
+            io.stderr:write(serialize_list(lastType).."\n")
             lastType = lastType[2]
             while lastType[1] == "customType" do lastType = getType(mod,mod[3],lastType[2]) end
             if getAddr then return end
