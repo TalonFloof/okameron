@@ -120,6 +120,9 @@ return function(ir,asm)
                     for i=1,argCount do
                         io.stdout:write("    sw a"..(i-1)..", "..(i*4).."(sp)\n")
                     end
+                elseif r[1] == "arg" and r[2] ~= 0 then
+                    io.stdout:write("    addi sp, sp, -4\n")
+                    io.stdout:write("    sw a0, 4(sp)\n")
                 end
             end
         end,
@@ -138,6 +141,9 @@ return function(ir,asm)
                         io.stdout:write("    lw a"..(i-1)..", "..(i*4).."(sp)\n")
                     end
                     io.stdout:write("    addi sp, sp, "..(argCount*4).."\n")
+                elseif r[1] == "arg" and r[2] ~= 0 then
+                    io.stdout:write("    lw a0, 4(sp)\n")
+                    io.stdout:write("    addi sp, sp, 4\n")
                 end
             end
             callDepth = callDepth - 1
