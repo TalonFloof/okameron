@@ -294,16 +294,24 @@ return function(ir,asm)
                 io.stdout:write("    mov.8 ["..getReg(s).."], "..getReg(d).."\n")
             else
                 if offset > 0 then
-                    io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
-                    io.stdout:write("    mov.8 ["..getReg(s).."], "..getReg(d).."\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                    if offset > 127 then
+                        io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
+                        io.stdout:write("    mov.8 ["..getReg(s).."], "..getReg(d).."\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                        end
+                    else
+                        io.stdout:write("    mov.8 ["..getReg(s).."+"..offset.."], "..getReg(d).."\n")
                     end
                 else
-                    io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
-                    io.stdout:write("    mov.8 ["..getReg(s).."], "..getReg(d).."\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                    if offset < -128 then
+                        io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
+                        io.stdout:write("    mov.8 ["..getReg(s).."], "..getReg(d).."\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                        end
+                    else
+                        io.stdout:write("    mov.8 ["..getReg(s)..offset.."], "..getReg(d).."\n")
                     end
                 end
             end
@@ -313,16 +321,24 @@ return function(ir,asm)
                 io.stdout:write("    mov.16 ["..getReg(s).."], "..getReg(d).."\n")
             else
                 if offset > 0 then
-                    io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
-                    io.stdout:write("    mov.16 ["..getReg(s).."], "..getReg(d).."\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                    if offset > 127 then
+                        io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
+                        io.stdout:write("    mov.16 ["..getReg(s).."], "..getReg(d).."\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                        end
+                    else
+                        io.stdout:write("    mov.16 ["..getReg(s).."+"..offset.."], "..getReg(d).."\n")
                     end
                 else
-                    io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
-                    io.stdout:write("    mov.16 ["..getReg(s).."], "..getReg(d).."\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                    if offset < -128 then
+                        io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
+                        io.stdout:write("    mov.16 ["..getReg(s).."], "..getReg(d).."\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                        end
+                    else
+                        io.stdout:write("    mov.16 ["..getReg(s)..offset.."], "..getReg(d).."\n")
                     end
                 end
             end
@@ -332,16 +348,24 @@ return function(ir,asm)
                 io.stdout:write("    mov.32 ["..getReg(s).."], "..getReg(d).."\n")
             else
                 if offset > 0 then
-                    io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
-                    io.stdout:write("    mov.32 ["..getReg(s).."], "..getReg(d).."\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                    if offset > 127 then
+                        io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
+                        io.stdout:write("    mov.32 ["..getReg(s).."], "..getReg(d).."\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                        end
+                    else
+                        io.stdout:write("    mov.32 ["..getReg(s).."+"..offset.."], "..getReg(d).."\n")
                     end
                 else
-                    io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
-                    io.stdout:write("    mov.32 ["..getReg(s).."], "..getReg(d).."\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                    if offset < -128 then
+                        io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
+                        io.stdout:write("    mov.32 ["..getReg(s).."], "..getReg(d).."\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                        end
+                    else
+                        io.stdout:write("    mov.32 ["..getReg(s)..offset.."], "..getReg(d).."\n")
                     end
                 end
             end
@@ -351,16 +375,24 @@ return function(ir,asm)
                 io.stdout:write("    mov.32 ["..getReg(s).."], "..getReg(d).."\n")
             else
                 if offset > 0 then
-                    io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
-                    io.stdout:write("    mov.32 ["..getReg(s).."], "..getReg(d).."\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                    if offset > 127 then
+                        io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
+                        io.stdout:write("    mov.32 ["..getReg(s).."], "..getReg(d).."\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                        end
+                    else
+                        io.stdout:write("    mov.32 ["..getReg(s).."+"..offset.."], "..getReg(d).."\n")
                     end
                 else
-                    io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
-                    io.stdout:write("    mov.32 ["..getReg(s).."], "..getReg(d).."\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                    if offset < -128 then
+                        io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
+                        io.stdout:write("    mov.32 ["..getReg(s).."], "..getReg(d).."\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                        end
+                    else
+                        io.stdout:write("    mov.32 ["..getReg(s)..offset.."], "..getReg(d).."\n")
                     end
                 end
             end
@@ -370,16 +402,24 @@ return function(ir,asm)
                 io.stdout:write("    movz.8 "..getReg(d)..", ["..getReg(s).."]\n")
             else
                 if offset > 0 then
-                    io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
-                    io.stdout:write("    movz.8 "..getReg(d)..", ["..getReg(s).."]\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                    if offset > 127 then
+                        io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
+                        io.stdout:write("    movz.8 "..getReg(d)..", ["..getReg(s).."]\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                        end
+                    else
+                        io.stdout:write("    movz.8 "..getReg(d)..", ["..getReg(s).."+"..offset.."]\n")
                     end
                 else
-                    io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
-                    io.stdout:write("    movz.8 "..getReg(d)..", ["..getReg(s).."]\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                    if offset < -128 then
+                        io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
+                        io.stdout:write("    movz.8 "..getReg(d)..", ["..getReg(s).."]\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                        end
+                    else
+                        io.stdout:write("    movz.8 "..getReg(d)..", ["..getReg(s)..offset.."]\n")
                     end
                 end
             end
@@ -389,16 +429,24 @@ return function(ir,asm)
                 io.stdout:write("    movz.16 "..getReg(d)..", ["..getReg(s).."]\n")
             else
                 if offset > 0 then
-                    io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
-                    io.stdout:write("    movz.16 "..getReg(d)..", ["..getReg(s).."]\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                    if offset > 127 then
+                        io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
+                        io.stdout:write("    movz.16 "..getReg(d)..", ["..getReg(s).."]\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                        end
+                    else
+                        io.stdout:write("    movz.16 "..getReg(d)..", ["..getReg(s).."+"..offset.."]\n")
                     end
                 else
-                    io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
-                    io.stdout:write("    movz.16 "..getReg(d)..", ["..getReg(s).."]\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                    if offset < -128 then
+                        io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
+                        io.stdout:write("    movz.16 "..getReg(d)..", ["..getReg(s).."]\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                        end
+                    else
+                        io.stdout:write("    movz.16 "..getReg(d)..", ["..getReg(s)..offset.."]\n")
                     end
                 end
             end
@@ -408,16 +456,24 @@ return function(ir,asm)
                 io.stdout:write("    mov.32 "..getReg(d)..", ["..getReg(s).."]\n")
             else
                 if offset > 0 then
-                    io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
-                    io.stdout:write("    mov.32 "..getReg(d)..", ["..getReg(s).."]\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                    if offset > 127 then
+                        io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
+                        io.stdout:write("    mov.32 "..getReg(d)..", ["..getReg(s).."]\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                        end
+                    else
+                        io.stdout:write("    mov.32 "..getReg(d)..", ["..getReg(s).."+"..offset.."]\n")
                     end
                 else
-                    io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
-                    io.stdout:write("    mov.32 "..getReg(d)..", ["..getReg(s).."]\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                    if offset < -128 then
+                        io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
+                        io.stdout:write("    mov.32 "..getReg(d)..", ["..getReg(s).."]\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                        end
+                    else
+                        io.stdout:write("    mov.32 "..getReg(d)..", ["..getReg(s)..offset.."]\n")
                     end
                 end
             end
@@ -427,16 +483,24 @@ return function(ir,asm)
                 io.stdout:write("    mov.32 "..getReg(d)..", ["..getReg(s).."]\n")
             else
                 if offset > 0 then
-                    io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
-                    io.stdout:write("    mov.32 "..getReg(d)..", ["..getReg(s).."]\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                    if offset > 127 then
+                        io.stdout:write("    add "..getReg(s)..", "..offset.."\n")
+                        io.stdout:write("    mov.32 "..getReg(d)..", ["..getReg(s).."]\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    sub "..getReg(s)..", "..offset.."\n")
+                        end
+                    else
+                        io.stdout:write("    mov.32 "..getReg(d)..", ["..getReg(s).."+"..offset.."]\n")
                     end
                 else
-                    io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
-                    io.stdout:write("    mov.32 "..getReg(d)..", ["..getReg(s).."]\n")
-                    if getReg(s) ~= getReg(d) then
-                        io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                    if offset < -128 then
+                        io.stdout:write("    sub "..getReg(s)..", "..(-offset).."\n")
+                        io.stdout:write("    mov.32 "..getReg(d)..", ["..getReg(s).."]\n")
+                        if getReg(s) ~= getReg(d) then
+                            io.stdout:write("    add "..getReg(s)..", "..(-offset).."\n")
+                        end
+                    else
+                        io.stdout:write("    mov.32 "..getReg(d)..", ["..getReg(s)..offset.."]\n")
                     end
                 end
             end
